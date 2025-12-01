@@ -1,0 +1,48 @@
+# FastAPI и ASGI сервер
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# База данных
+sqlalchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Redis (кэширование)
+redis==5.0.1
+hiredis==2.3.2
+
+# Валидация данных
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Обработка данных
+pandas==2.2.0
+numpy==1.26.3
+polars==0.20.6
+
+# Технические индикаторы
+pandas-ta==0.3.14b0
+ta-lib==0.4.28
+
+# Утилиты
+python-dateutil==2.8.2
+pytz==2024.1
+
+# CORS
+python-cors==1.0.0
+
+# Тестирование
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
+
+# Code quality
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+
+# Логирование
+loguru==0.7.2
