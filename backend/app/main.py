@@ -59,10 +59,22 @@ async def health_check():
     }
 
 
-# Подключение роутеров (будет добавлено позже)
-# from app.api.v1 import instruments, data, indicators, strategies, signals, backtesting
-# app.include_router(instruments.router, prefix=f"{settings.API_V1_PREFIX}/instruments", tags=["instruments"])
-# app.include_router(data.router, prefix=f"{settings.API_V1_PREFIX}/data", tags=["data"])
+# Подключение роутеров
+from app.api.v1 import data, instruments
+
+app.include_router(
+    instruments.router,
+    prefix=f"{settings.API_V1_PREFIX}/instruments",
+    tags=["instruments"]
+)
+app.include_router(
+    data.router,
+    prefix=f"{settings.API_V1_PREFIX}/data",
+    tags=["data"]
+)
+
+# Роутеры, которые будут добавлены позже:
+# from app.api.v1 import indicators, strategies, signals, backtesting
 # app.include_router(indicators.router, prefix=f"{settings.API_V1_PREFIX}/indicators", tags=["indicators"])
 # app.include_router(strategies.router, prefix=f"{settings.API_V1_PREFIX}/strategies", tags=["strategies"])
 # app.include_router(signals.router, prefix=f"{settings.API_V1_PREFIX}/signals", tags=["signals"])
