@@ -195,48 +195,65 @@
 
 ---
 
-## Фаза 2: API Endpoints (MVP) (3-4 дня)
+## Фаза 2: API Endpoints (MVP) ✅ (3-4 дня)
 
-### 2.1 API для инструментов
+### 2.1 API для инструментов ✅
 
 **Файлы:** `backend/app/api/v1/instruments.py`
 
-- [ ] `GET /api/v1/instruments` - список всех инструментов
-- [ ] `GET /api/v1/instruments/{ticker}` - информация о тикере
-- [ ] `POST /api/v1/instruments` - добавить тикер
-- [ ] `PUT /api/v1/instruments/{ticker}` - обновить
-- [ ] `DELETE /api/v1/instruments/{ticker}` - удалить
-- [ ] `GET /api/v1/instruments/{ticker}/index` - получить индекс тикера
-- [ ] `PUT /api/v1/instruments/{ticker}/index/{index_id}` - связать с индексом
+- [x] `GET /api/v1/instruments` - список всех инструментов
+- [x] `GET /api/v1/instruments/{ticker}` - информация о тикере
+- [x] `POST /api/v1/instruments` - добавить тикер
+- [x] `PUT /api/v1/instruments/{ticker}` - обновить
+- [x] `DELETE /api/v1/instruments/{ticker}` - удалить
+- [x] `GET /api/v1/instruments/indexes/` - список индексов
+- [x] `GET /api/v1/instruments/indexes/{index_id}` - информация об индексе
+- [x] `POST /api/v1/instruments/indexes/` - создать индекс
+- [x] `PUT /api/v1/instruments/indexes/{index_id}` - обновить индекс
+- [x] `DELETE /api/v1/instruments/indexes/{index_id}` - удалить индекс
+- [x] `PUT /api/v1/instruments/{ticker}/index/{index_id}` - связать с индексом
 
 - [ ] **Тесты:** integration тесты с TestClient (FastAPI)
 
-### 2.2 API для данных
+### 2.2 API для данных ✅
 
 **Файлы:** `backend/app/api/v1/data.py`
 
-- [ ] `GET /api/v1/data/{ticker}` - получить OHLCV
-  - Query параметры: `timeframe`, `start`, `end`
+- [x] `GET /api/v1/data/{ticker}` - получить OHLCV
+  - Query параметры: `timeframe`, `start`, `end`, `limit`
   - Возвращать JSON массив свечей
 
-- [ ] `POST /api/v1/data/import` - импорт из CSV
-  - Body: `{ticker, csv_path, timeframe}`
+- [x] `POST /api/v1/data/import` - импорт из CSV
+  - Body: `{ticker, csv_path, timeframe, create_instrument, ...}`
   - Запуск CSVImporter
 
-- [ ] `GET /api/v1/data/timeframes` - список доступных таймфреймов
-  - Возвращать: `["1h", "1d", "1w", "1M"]`
+- [x] `POST /api/v1/data/import/batch` - массовый импорт из директории
+  - Автоматическое извлечение тикера из имени файла
+
+- [x] `GET /api/v1/data/timeframes/` - список доступных таймфреймов
+  - Возвращать: `["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"]`
+
+- [x] `GET /api/v1/data/{ticker}/latest` - получить последнюю свечу
+
+- [x] `DELETE /api/v1/data/{ticker}` - удалить OHLCV данные
 
 - [ ] **Тесты:**
   - [ ] Тест получения OHLCV данных
   - [ ] Тест импорта CSV
   - [ ] Использовать тестовую БД
 
-### 2.3 Dependencies
+### 2.3 Dependencies ✅
 
 **Файлы:** `backend/app/api/deps.py`
 
-- [ ] `get_db()` - dependency для БД сессии
-- [ ] Общие зависимости (аутентификация в будущем)
+- [x] `get_db()` - dependency для БД сессии
+- [x] Placeholders для будущей аутентификации
+
+### 2.4 Интеграция в FastAPI ✅
+
+- [x] Обновлён `main.py` с подключением роутеров
+- [x] API versioning через `/api/v1`
+- [x] Swagger UI документация (автоматически)
 
 ---
 
