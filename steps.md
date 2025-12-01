@@ -8,19 +8,19 @@
 
 ---
 
-## Фаза 0: Инициализация проекта (1-2 дня)
+## Фаза 0: Инициализация проекта (1-2 дня) ✅
 
 ### 0.1 Настройка окружения разработки
 
-- [ ] Создать структуру каталогов проекта
+- [x] Создать структуру каталогов проекта
   - `backend/app/` - основной код бэкенда
   - `frontend/src/` - код фронтенда
   - `data/` - CSV файлы
   - `migrations/` - миграции БД
   - `tests/` - тесты
 
-- [ ] Настроить Backend
-  - [ ] Создать `requirements.txt` с зависимостями:
+- [x] Настроить Backend
+  - [x] Создать `requirements.txt` с зависимостями:
     - fastapi, uvicorn
     - sqlalchemy, alembic
     - pydantic, pydantic-settings
@@ -29,8 +29,8 @@
     - psycopg2-binary
     - redis (опционально)
     - pytest, pytest-asyncio
-  - [ ] Создать виртуальное окружение Python
-  - [ ] Инициализировать `pyproject.toml`
+  - [x] Создать виртуальное окружение Python
+  - [x] Инициализировать `pyproject.toml`
 
 - [ ] Настроить Frontend
   - [ ] Создать Angular проект: `ng new trading-signals-frontend --standalone`
@@ -41,45 +41,45 @@
   - [ ] Настроить `tsconfig.json` (strict mode)
   - [ ] Настроить `angular.json` (environments)
 
-- [ ] Настроить инфраструктуру
-  - [ ] Создать `docker-compose.yml` для PostgreSQL + TimescaleDB
-  - [ ] Создать `.env.example` с переменными окружения
-  - [ ] Создать `.gitignore`
-  - [ ] Настроить Alembic для миграций БД
+- [x] Настроить инфраструктуру
+  - [x] Создать `docker-compose.yml` для PostgreSQL + TimescaleDB
+  - [x] Создать `.env.example` с переменными окружения
+  - [x] Создать `.gitignore`
+  - [x] Настроить Alembic для миграций БД
 
-- [ ] Настроить Git
-  - [ ] Инициализировать репозиторий
-  - [ ] Создать `.gitignore`
-  - [ ] Первый коммит с базовой структурой
+- [x] Настроить Git
+  - [x] Инициализировать репозиторий
+  - [x] Создать `.gitignore`
+  - [x] Первый коммит с базовой структурой
 
 ---
 
-## Фаза 1: Основа Backend (MVP) (1 неделя)
+## Фаза 1: Основа Backend (MVP) (1 неделя) 🔄
 
-### 1.1 Модели базы данных
+### 1.1 Модели базы данных ✅
 
 **Файлы:** `backend/app/models/`
 
-- [ ] `database.py` - настройка подключения к БД
-  - [ ] Создать `engine` и `SessionLocal`
-  - [ ] Базовый класс `Base` для моделей
-  - [ ] Dependency `get_db()` для FastAPI
+- [x] `database.py` - настройка подключения к БД
+  - [x] Создать `engine` и `SessionLocal`
+  - [x] Базовый класс `Base` для моделей
+  - [x] Dependency `get_db()` для FastAPI
 
-- [ ] `instrument.py` - модель инструмента
+- [x] `instrument.py` - модель инструмента
   ```python
   class Instrument(Base):
       id, ticker, name, market, instrument_type
       index_id (ForeignKey), index (relationship)
   ```
 
-- [ ] `index.py` - модель индекса
+- [x] `index.py` - модель индекса
   ```python
   class Index(Base):
       id, name, ticker
       instruments (relationship)
   ```
 
-- [ ] `ohlcv.py` - модель свечей
+- [x] `ohlcv.py` - модель свечей
   ```python
   class OHLCV(Base):
       id, instrument_id, timeframe, timestamp
@@ -87,7 +87,7 @@
       UniqueConstraint + Indexes
   ```
 
-- [ ] `signal.py` - модель сигнала
+- [x] `signal.py` - модель сигнала
   ```python
   class Signal(Base):
       id, instrument_id, strategy_name, signal_type
@@ -95,14 +95,14 @@
       position_size, stop_loss, take_profit
   ```
 
-- [ ] `strategy.py` - модель стратегии
+- [x] `strategy.py` - модель стратегии
   ```python
   class Strategy(Base):
       id, name, description, config (JSON)
       created_at, updated_at
   ```
 
-- [ ] Создать первую миграцию Alembic
+- [x] Создать первую миграцию Alembic
   ```bash
   alembic init migrations
   alembic revision --autogenerate -m "Initial models"
@@ -114,75 +114,79 @@
   - [ ] Тест связи инструмента с индексом
   - [ ] Тест UniqueConstraint для OHLCV
 
-### 1.2 Pydantic схемы
+### 1.2 Pydantic схемы ✅
 
 **Файлы:** `backend/app/schemas/`
 
-- [ ] `instrument.py`
-  - [ ] `InstrumentBase`, `InstrumentCreate`, `InstrumentUpdate`
-  - [ ] `InstrumentRead` (с данными индекса)
+- [x] `instrument.py`
+  - [x] `InstrumentBase`, `InstrumentCreate`, `InstrumentUpdate`
+  - [x] `InstrumentRead` (с данными индекса)
 
-- [ ] `signal.py`
-  - [ ] `SignalBase`, `SignalCreate`, `SignalRead`
+- [x] `signal.py`
+  - [x] `SignalBase`, `SignalCreate`, `SignalRead`
 
-- [ ] `indicator.py`
-  - [ ] `IndicatorConfig`, `IndicatorResult`
+- [x] `indicator.py`
+  - [x] `IndicatorConfig`, `IndicatorResult`
 
-- [ ] `backtest.py`
-  - [ ] `BacktestConfig`, `BacktestResult`, `Trade`
+- [x] `backtest.py`
+  - [x] `BacktestConfig`, `BacktestResult`, `Trade`
 
 - [ ] **Тесты:** валидация схем с pytest
 
-### 1.3 Конфигурация приложения
+### 1.3 Конфигурация приложения ✅
 
 **Файлы:** `backend/app/config.py`
 
-- [ ] Класс `Settings` (Pydantic BaseSettings)
-  - [ ] `DATABASE_URL`
-  - [ ] `REDIS_URL` (опционально)
-  - [ ] `API_V1_PREFIX = "/api/v1"`
-  - [ ] `DEBUG_MODE`
-  - [ ] CORS настройки
+- [x] Класс `Settings` (Pydantic BaseSettings)
+  - [x] `DATABASE_URL`
+  - [x] `REDIS_URL` (опционально)
+  - [x] `API_V1_PREFIX = "/api/v1"`
+  - [x] `DEBUG_MODE`
+  - [x] CORS настройки
 
-### 1.4 Основное FastAPI приложение
+### 1.4 Основное FastAPI приложение ✅
 
 **Файлы:** `backend/app/main.py`
 
-- [ ] Создать FastAPI app
-- [ ] Настроить CORS middleware
-- [ ] Подключить роутеры (пока пустые)
-- [ ] Настроить обработку ошибок
-- [ ] Health check endpoint: `GET /health`
+- [x] Создать FastAPI app
+- [x] Настроить CORS middleware
+- [x] Подключить роутеры (пока пустые)
+- [x] Настроить обработку ошибок
+- [x] Health check endpoint: `GET /health`
 
 - [ ] **Тест:** запустить сервер, проверить `/health`
 
-### 1.5 Data Management Layer
+### 1.5 Data Management Layer ✅
 
 **Файлы:** `backend/app/core/`
 
-- [ ] `data_loader.py`
+- [x] `data_loader.py`
   ```python
   class DataLoader:
       def load_from_csv(ticker, timeframe, path) -> pd.DataFrame
       def load_from_db(ticker, timeframe, start, end) -> pd.DataFrame
       def migrate_csv_to_db(csv_path, ticker) -> None
   ```
-  - [ ] Реализовать чтение CSV (pandas)
-  - [ ] Реализовать загрузку из БД (SQLAlchemy)
-  - [ ] Валидация формата CSV
+  - [x] Реализовать чтение CSV (pandas)
+  - [x] Реализовать загрузку из БД (SQLAlchemy)
+  - [x] Валидация формата CSV
 
-- [ ] `data_validator.py` (в `utils/`)
-  - [ ] Проверка формата дат
-  - [ ] Проверка OHLC корректности: H >= max(O,C), L <= min(O,C)
-  - [ ] Проверка дубликатов
-  - [ ] Обработка пропусков (forward fill)
+- [x] `data_validator.py` (в `utils/`)
+  - [x] Проверка формата дат
+  - [x] Проверка OHLC корректности: H >= max(O,C), L <= min(O,C)
+  - [x] Проверка дубликатов
+  - [x] Обработка пропусков (forward fill)
 
-- [ ] `csv_importer.py` (в `utils/`)
+- [x] `csv_importer.py` (в `utils/`)
   ```python
   class CSVImporter:
       def import_file(csv_path, ticker, timeframe) -> None
       def import_directory(directory, pattern, timeframe) -> None
   ```
+
+- [x] `data_manager.py` - управление данными
+  - [x] Multi-timeframe support
+  - [x] Resampling между таймфреймами
 
 - [ ] **Тесты:**
   - [ ] `test_data_loader.py` - загрузка из CSV и БД
