@@ -1,6 +1,6 @@
 """
 API v1 endpoints
 """
-from app.api.v1 import data, instruments
+from app.api.v1 import data, indicators, instruments
 
-__all__ = ["data", "instruments"]
+__all__ = ["data", "indicators", "instruments"]
