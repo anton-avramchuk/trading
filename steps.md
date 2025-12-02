@@ -438,87 +438,90 @@
 
 ---
 
-## Фаза 5: Система стратегий (3-4 дня)
+## Фаза 5: Система стратегий ✅ (3-4 дня)
 
-### 5.1 Базовый класс стратегии
+### 5.1 Базовый класс стратегии ✅
 
 **Файлы:** `backend/app/strategies/base.py`
 
-- [ ] Абстрактный класс `BaseStrategy`
-  ```python
-  class BaseStrategy(ABC):
-      name: str
-      description: str
-      indicators: list[BaseIndicator]
+- [x] Абстрактный класс `BaseStrategy`
+  - [x] Атрибуты: name, description, version
+  - [x] _setup_indicators() - абстрактный метод
+  - [x] generate_signal() - абстрактный метод
+  - [x] add_indicator() - добавление индикатора в конфигурацию
+  - [x] required_timeframes() - список необходимых таймфреймов
+  - [x] calculate_indicators() - расчёт всех индикаторов
+  - [x] validate_data() - валидация входных данных
 
-      @abstractmethod
-      def generate_signal(self,
-                          data: dict[str, pd.DataFrame]) -> Signal | None:
-          pass
+- [x] IndicatorConfig - конфигурация индикаторов
+  - [x] name, timeframe, parameters, alias
 
-      def add_indicator(self, indicator: BaseIndicator) -> None
-      def required_timeframes(self) -> list[str]
-  ```
+- [x] Signal - модель торгового сигнала
+  - [x] signal_type: BUY, SELL, HOLD
+  - [x] Риск-менеджмент: stop_loss, take_profit, position_size
+  - [x] Метаданные: confidence, reason, metadata
 
-- [ ] Декоратор `@register_strategy`
+- [x] StrategyError - кастомное исключение
 
-### 5.2 Реестр стратегий
+### 5.2 Реестр стратегий ✅
 
 **Файлы:** `backend/app/strategies/registry.py`
 
-- [ ] Класс `StrategyRegistry`
-  ```python
-  class StrategyRegistry:
-      _strategies: dict[str, Type[BaseStrategy]] = {}
+- [x] Класс `StrategyRegistry`
+  - [x] register() - регистрация стратегии
+  - [x] get() - получение класса по имени
+  - [x] get_all() - все стратегии
+  - [x] list_names() - список названий
+  - [x] get_info() - метаданные стратегии
+  - [x] get_all_info() - метаданные всех стратегий
+  - [x] create_strategy() - создание экземпляра
 
-      @classmethod
-      def register(cls, strategy_class) -> None
+- [x] Декоратор `@register_strategy` для автоматической регистрации
 
-      @classmethod
-      def get_strategy(cls, name: str) -> Type[BaseStrategy]
-
-      @classmethod
-      def list_strategies(cls) -> list[str]
-  ```
-
-### 5.3 Примеры стратегий
+### 5.3 Примеры стратегий ✅
 
 **Файлы:** `backend/app/strategies/examples/`
 
-- [ ] `ma_cross.py` - стратегия пересечения MA
-  ```python
-  @register_strategy
-  class MACrossStrategy(BaseStrategy):
-      # MA fast на 1h, MA slow на 1d
-      # Сигнал: пересечение
-  ```
+- [x] `rsi_strategy.py` - RSIStrategy
+  - [x] BUY: RSI < oversold_level (30)
+  - [x] SELL: RSI > overbought_level (70)
+  - [x] Параметры: rsi_period, oversold, overbought, timeframe
+  - [x] ATR для Stop Loss / Take Profit
 
-- [ ] `rsi_oversold.py` - стратегия перепроданности RSI
-  ```python
-  @register_strategy
-  class RSIOversoldStrategy(BaseStrategy):
-      # RSI на 1h < 30
-      # MA на 1d для фильтра тренда
-  ```
+- [x] `macd_strategy.py` - MACDStrategy
+  - [x] BUY: MACD bullish crossover
+  - [x] SELL: MACD bearish crossover
+  - [x] Параметры: fast_period, slow_period, signal_period, timeframe
+  - [x] Confidence на основе histogram
 
-- [ ] `trend_following.py` - multi-timeframe trend following
-  - MA на 1d для тренда
-  - RSI на 1h для входа
+- [x] `multi_tf_strategy.py` - MultiTimeframeStrategy
+  - [x] EMA на высоком TF для определения тренда
+  - [x] RSI на низком TF для генерации сигналов
+  - [x] Фильтрация по тренду
+  - [x] Параметры: high_timeframe, low_timeframe, ema_period, rsi_period
 
 - [ ] **Тесты:** `tests/unit/test_strategies.py`
   - [ ] Тест генерации сигналов для каждой стратегии
   - [ ] Использовать фикстуры с историческими данными
 
-### 5.4 API для стратегий
+### 5.4 API для стратегий ✅
 
 **Файлы:** `backend/app/api/v1/strategies.py`
 
-- [ ] `GET /api/v1/strategies` - список стратегий
-- [ ] `GET /api/v1/strategies/{name}` - детали стратегии
-- [ ] `POST /api/v1/strategies` - создать кастомную стратегию
-- [ ] `PUT /api/v1/strategies/{id}` - обновить стратегию
+- [x] `GET /api/v1/strategies/` - список стратегий
+  - [x] Возвращает StrategyListResponse
 
-- [ ] **Тесты:** integration тесты CRUD операций
+- [x] `GET /api/v1/strategies/{name}` - информация о стратегии
+  - [x] Возвращает StrategyInfo
+
+- [x] `GET /api/v1/strategies/{name}/details` - детальная информация
+  - [x] Возвращает required_timeframes и indicators_config
+
+- [x] `GET /api/v1/strategies/stats/summary` - статистика
+
+- [x] Обновлён main.py с подключением роутера
+
+- [ ] **Тесты:** integration тесты API endpoints
 
 ---
 
