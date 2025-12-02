@@ -2,10 +2,12 @@
 Базовый класс для всех индикаторов
 """
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 from pydantic import BaseModel, Field
+
+from app.indicators.result_types import IndicatorResult
 
 
 class IndicatorParameter(BaseModel):
@@ -65,7 +67,10 @@ class BaseIndicator(ABC):
         pass
 
     @abstractmethod
-    def calculate(self, data: pd.DataFrame) -> pd.Series | pd.DataFrame:
+    def calculate(
+        self,
+        data: pd.DataFrame
+    ) -> Union[pd.Series, pd.DataFrame, IndicatorResult]:
         """
         Расчёт индикатора
 
@@ -74,14 +79,40 @@ class BaseIndicator(ABC):
                   Колонки: open, high, low, close, volume
 
         Returns:
-            pd.Series или pd.DataFrame с результатами расчёта
+            Результат расчёта индикатора (3 варианта):
             - pd.Series: для простых индикаторов (MA, RSI)
             - pd.DataFrame: для сложных индикаторов (MACD, Bollinger Bands)
+            - IndicatorResult: для дискретных точек и фигур
 
         Raises:
             ValueError: Если данные некорректны
         """
         pass
+
+    def normalize_result(
+        self,
+        result: Union[pd.Series, pd.DataFrame, IndicatorResult]
+    ) -> IndicatorResult:
+        """
+        Нормализация результата в IndicatorResult
+
+        Обеспечивает обратную совместимость для старых индикаторов.
+
+        Args:
+            result: Результат calculate()
+
+        Returns:
+            IndicatorResult: Нормализованный результат
+        """
+        if isinstance(result, IndicatorResult):
+            return result
+        elif isinstance(result, (pd.Series, pd.DataFrame)):
+            return IndicatorResult.from_continuous(result)
+        else:
+            raise TypeError(
+                f"Invalid result type: {type(result)}. "
+                f"Expected Series, DataFrame, or IndicatorResult"
+            )
 
     def _validate_parameters(self) -> None:
         """
