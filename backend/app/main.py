@@ -60,7 +60,7 @@ async def health_check():
 
 
 # Подключение роутеров
-from app.api.v1 import data, indicators, instruments, signals, strategies
+from app.api.v1 import backtesting, data, indicators, instruments, signals, strategies
 
 # Импорт индикаторов и стратегий для автоматической регистрации
 import app.indicators  # noqa: F401
@@ -91,10 +91,11 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/signals",
     tags=["signals"]
 )
-
-# Роутеры, которые будут добавлены позже:
-# from app.api.v1 import backtesting
-# app.include_router(backtesting.router, prefix=f"{settings.API_V1_PREFIX}/backtest", tags=["backtesting"])
+app.include_router(
+    backtesting.router,
+    prefix=f"{settings.API_V1_PREFIX}/backtest",
+    tags=["backtesting"]
+)
 
 
 if __name__ == "__main__":
