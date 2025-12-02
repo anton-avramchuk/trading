@@ -257,102 +257,117 @@
 
 ---
 
-## Фаза 3: Система индикаторов (4-5 дней)
+## Фаза 3: Система индикаторов ✅ (4-5 дней)
 
-### 3.1 Базовый класс индикатора
+### 3.1 Базовый класс индикатора ✅
 
 **Файлы:** `backend/app/indicators/base.py`
 
-- [ ] Абстрактный класс `BaseIndicator`
-  ```python
-  class BaseIndicator(ABC):
-      name: str
-      category: str
-      parameters: dict
-      timeframe: str
+- [x] Абстрактный класс `BaseIndicator`
+  - [x] Атрибуты: name, category, description, timeframe, parameters
+  - [x] Метод calculate() - абстрактный
+  - [x] Метод get_parameters_schema() - абстрактный
+  - [x] Валидация параметров (_validate_parameters)
+  - [x] Валидация данных (_validate_data)
+  - [x] Метод get_info() для метаданных
 
-      @abstractmethod
-      def calculate(self, data: pd.DataFrame) -> pd.Series:
-          pass
+- [x] IndicatorParameter - Pydantic модель для описания параметров
+- [x] IndicatorError - кастомное исключение
 
-      def validate_parameters(self) -> bool:
-          pass
-  ```
-
-- [ ] Декоратор `@register_indicator`
-
-### 3.2 Реестр индикаторов
+### 3.2 Реестр индикаторов ✅
 
 **Файлы:** `backend/app/indicators/registry.py`
 
-- [ ] Класс `IndicatorRegistry`
-  ```python
-  class IndicatorRegistry:
-      _indicators: dict[str, Type[BaseIndicator]] = {}
+- [x] Класс `IndicatorRegistry`
+  - [x] register() - регистрация индикатора
+  - [x] get() - получение класса по имени
+  - [x] get_all() - все индикаторы
+  - [x] list_names() - список названий
+  - [x] get_by_category() - фильтр по категории
+  - [x] get_info() - метаданные индикатора
+  - [x] get_all_info() - метаданные всех индикаторов
+  - [x] create_indicator() - создание экземпляра
 
-      @classmethod
-      def register(cls, indicator_class) -> None
+- [x] Декоратор `@register_indicator` для автоматической регистрации
 
-      @classmethod
-      def get_indicator(cls, name: str) -> Type[BaseIndicator]
-
-      @classmethod
-      def list_available(cls) -> list[str]
-
-      @classmethod
-      def get_by_category(cls, category: str) -> list
-  ```
-
-### 3.3 Технические индикаторы
+### 3.3 Технические индикаторы ✅
 
 **Файлы:** `backend/app/indicators/technical/`
 
-- [ ] `moving_average.py`
-  - [ ] SMA (Simple Moving Average)
-  - [ ] EMA (Exponential Moving Average)
-  - [ ] WMA (Weighted Moving Average)
-  - [ ] Параметры: `period`, `ma_type`, `timeframe`
+- [x] `moving_average.py`
+  - [x] MA (Simple Moving Average)
+  - [x] EMA (Exponential Moving Average)
+  - [x] Параметры: period, source
 
-- [ ] `momentum.py`
-  - [ ] RSI (Relative Strength Index)
-  - [ ] Stochastic Oscillator
-  - [ ] Параметры: `period`, `timeframe`
+- [x] `rsi.py`
+  - [x] RSI (Relative Strength Index)
+  - [x] Параметры: period, source
 
-- [ ] `trend.py`
-  - [ ] MACD (Moving Average Convergence Divergence)
-  - [ ] ADX (Average Directional Index)
-  - [ ] Параметры: зависят от индикатора
+- [x] `stochastic.py`
+  - [x] Stochastic Oscillator
+  - [x] Параметры: k_period, d_period, smooth_k
 
-- [ ] `volatility.py`
-  - [ ] Bollinger Bands
-  - [ ] ATR (Average True Range)
-  - [ ] Параметры: `period`, `std_dev` (для BB)
+- [x] `macd.py`
+  - [x] MACD (Moving Average Convergence Divergence)
+  - [x] Возвращает: macd, signal, histogram
+  - [x] Параметры: fast_period, slow_period, signal_period, source
+
+- [x] `adx.py`
+  - [x] ADX (Average Directional Index)
+  - [x] Возвращает: adx, plus_di, minus_di
+  - [x] Параметры: period
+
+- [x] `bollinger_bands.py`
+  - [x] Bollinger Bands
+  - [x] Возвращает: upper, middle, lower
+  - [x] Параметры: period, std_dev, source
+
+- [x] `atr.py`
+  - [x] ATR (Average True Range)
+  - [x] Параметры: period
 
 - [ ] **Тесты:** `tests/unit/test_indicators.py`
   - [ ] Тест расчёта каждого индикатора
   - [ ] Сравнение с известными значениями
   - [ ] Тест валидации параметров
 
-### 3.4 Пример кастомного индикатора
+### 3.4 Кастомные индикаторы ✅
 
-**Файлы:** `backend/app/indicators/custom/example.py`
+**Файлы:** `backend/app/indicators/custom/`
 
-- [ ] Простой кастомный индикатор (пример для пользователей)
-- [ ] Документация как создавать кастомные индикаторы
+- [x] `market_regime.py`
+  - [x] MarketRegime - определение режима рынка
+  - [x] Возвращает: "trending", "ranging", "volatile"
+  - [x] Использует ADX и ATR
+  - [x] Параметры: period, adx_threshold
 
-### 3.5 API для индикаторов
+- [x] `support_resistance.py`
+  - [x] SupportResistance - уровни поддержки/сопротивления
+  - [x] Поиск локальных экстремумов
+  - [x] Кластеризация близких уровней
+  - [x] Параметры: window, num_levels, tolerance
+
+### 3.5 API для индикаторов ✅
 
 **Файлы:** `backend/app/api/v1/indicators.py`
 
-- [ ] `GET /api/v1/indicators` - список доступных индикаторов
-  - Использовать `IndicatorRegistry.list_available()`
+- [x] `GET /api/v1/indicators/` - список доступных индикаторов
+  - [x] Возвращает IndicatorListResponse с метаданными
 
-- [ ] `GET /api/v1/indicators/{name}` - описание индикатора
-  - Параметры, категория, документация
+- [x] `GET /api/v1/indicators/{name}` - описание индикатора
+  - [x] Параметры, категория, документация
 
-- [ ] `POST /api/v1/indicators/calculate` - рассчитать индикатор
-  - Body: `{ticker, timeframe, indicator_name, params}`
-  - Возвращать: массив значений индикатора
+- [x] `GET /api/v1/indicators/category/{category}` - индикаторы по категории
+
+- [x] `POST /api/v1/indicators/calculate` - рассчитать индикатор
+  - [x] Body: IndicatorCalculateRequest
+  - [x] Возвращает: IndicatorCalculateResponse с результатами
+
+- [x] `POST /api/v1/indicators/calculate/multiple` - расчёт нескольких индикаторов
+
+- [x] `GET /api/v1/indicators/stats/usage` - статистика по индикаторам
+
+- [x] Обновлён main.py с подключением роутера
 
 - [ ] **Тесты:** integration тесты расчёта через API
 
