@@ -373,48 +373,66 @@
 
 ---
 
-## Фаза 4: Timeframe Manager (2-3 дня)
+## Фаза 4: Timeframe Manager ✅ (2-3 дня)
 
-### 4.1 Менеджер таймфреймов
+### 4.1 Утилиты для таймфреймов ✅
+
+**Файлы:** `backend/app/utils/timeframe_utils.py`
+
+- [x] Класс `TimeframeUtils`
+  - [x] validate_timeframe() - валидация таймфрейма
+  - [x] get_timeframe_minutes() - конвертация в минуты
+  - [x] get_timeframe_offset() - конвертация в pandas offset
+  - [x] get_timeframe_timedelta() - конвертация в timedelta
+  - [x] compare_timeframes() - сравнение таймфреймов
+  - [x] is_higher_timeframe() - проверка иерархии
+  - [x] get_higher_timeframes() - список более высоких TF
+  - [x] get_lower_timeframes() - список более низких TF
+  - [x] can_resample() - проверка возможности ресемплинга
+  - [x] get_multiplier() - множитель для конвертации
+  - [x] sort_timeframes() - сортировка таймфреймов
+
+- [x] Маппинги:
+  - [x] TIMEFRAME_TO_MINUTES
+  - [x] TIMEFRAME_TO_OFFSET
+  - [x] TIMEFRAME_ORDER
+
+### 4.2 Менеджер таймфреймов ✅
 
 **Файлы:** `backend/app/core/timeframe_manager.py`
 
-- [ ] Класс `TimeframeManager`
-  ```python
-  class TimeframeManager:
-      def align_timeframes(data_dict: dict[str, pd.DataFrame]) -> dict
-      def get_higher_timeframe_value(data: pd.DataFrame,
-                                       current_time: datetime,
-                                       tf: str) -> float
-      def resample_timeframe(data: pd.DataFrame,
-                             source_tf: str,
-                             target_tf: str) -> pd.DataFrame
-  ```
+- [x] Класс `TimeframeManager`
+  - [x] align_timeframes() - выравнивание данных разных TF
+  - [x] get_higher_timeframe_value() - получение значения с высокого TF
+  - [x] resample_ohlcv() - ресемплинг OHLCV данных
+  - [x] validate_multi_timeframe_data() - валидация данных
+  - [x] get_synchronized_timestamps() - синхронизация временных меток
+  - [x] merge_multi_timeframe_indicators() - объединение индикаторов
 
-- [ ] Реализовать выравнивание данных разных таймфреймов
-  - Синхронизация по времени
-  - Forward fill для высших таймфреймов
+- [x] Выравнивание данных разных таймфреймов
+  - [x] Синхронизация по времени
+  - [x] Forward fill для более высоких таймфреймов
+  - [x] Автоопределение базового таймфрейма
+
+- [x] Обновлены __init__.py для экспорта
 
 - [ ] **Тесты:**
   - [ ] Тест ресемплинга (1h -> 1d)
   - [ ] Тест выравнивания 2+ таймфреймов
   - [ ] Тест получения значения высшего ТФ
+  - [ ] Тест merge_multi_timeframe_indicators
 
-### 4.2 Data Manager с multi-timeframe
+### 4.3 Data Manager с multi-timeframe ✅
 
 **Файлы:** `backend/app/core/data_manager.py`
 
-- [ ] Класс `DataManager`
-  ```python
-  class DataManager:
-      def get_data(ticker, timeframe, start, end) -> pd.DataFrame
-      def get_multi_timeframe_data(ticker,
-                                    timeframes: list[str],
-                                    start, end) -> dict[str, pd.DataFrame]
-      def save_data(ticker, timeframe, data: pd.DataFrame) -> None
-  ```
+- [x] Класс `DataManager` (создан в Фазе 1)
+  - [x] get_data() - получение данных для одного TF
+  - [x] get_multi_timeframe_data() - для нескольких TF
+  - [x] save_data() - сохранение данных
+  - [x] resample_timeframe() - ресемплинг
 
-- [ ] Интеграция с `TimeframeManager`
+- [x] Multi-timeframe поддержка уже реализована
 
 - [ ] **Тесты:** тест загрузки multi-timeframe данных
 
