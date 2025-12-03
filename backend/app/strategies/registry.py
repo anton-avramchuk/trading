@@ -155,3 +155,7 @@ def register_strategy(strategy_class: Type[BaseStrategy]) -> Type[BaseStrategy]:
     """
     StrategyRegistry.register(strategy_class)
     return strategy_class
+
+
+# Экземпляр реестра для удобства импорта
+strategy_registry = StrategyRegistry()

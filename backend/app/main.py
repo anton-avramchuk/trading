@@ -63,8 +63,8 @@ async def health_check():
 from app.api.v1 import backtesting, data, indicators, instruments, signals, strategies
 
 # Импорт индикаторов и стратегий для автоматической регистрации
-import app.indicators  # noqa: F401
-import app.strategies  # noqa: F401
+from app import indicators as indicators_pkg  # noqa: F401
+from app import strategies as strategies_pkg  # noqa: F401
 
 app.include_router(
     instruments.router,

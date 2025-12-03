@@ -4,6 +4,7 @@
 from functools import lru_cache
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +32,23 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:8080"
     ]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Парсинг ALLOWED_ORIGINS из строки с запятыми или JSON"""
+        if isinstance(v, str):
+            # Попытка распарсить как JSON
+            import json
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+            # Если не JSON, то разбиваем по запятым
+            return [origin.strip() for origin in v.split(",")]
+        return v
 
     # Logging
     LOG_LEVEL: str = "INFO"

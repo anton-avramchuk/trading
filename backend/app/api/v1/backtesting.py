@@ -30,6 +30,15 @@ class BacktestRequest(BaseModel):
     use_risk_manager: bool = Field(True, description="Использовать риск-менеджер")
 
 
+class CompareStrategiesRequest(BaseModel):
+    """Запрос на сравнение стратегий"""
+    strategies: List[str] = Field(..., description="Список стратегий для сравнения")
+    ticker: str = Field(..., description="Тикер инструмента")
+    start_date: Optional[date] = Field(None, description="Начальная дата")
+    end_date: Optional[date] = Field(None, description="Конечная дата")
+    initial_capital: float = Field(100000.0, gt=0, description="Начальный капитал")
+
+
 class TradeResponse(BaseModel):
     """Ответ с информацией о сделке"""
     ticker: str
@@ -153,13 +162,7 @@ async def run_backtest(request: BacktestRequest):
 
 
 @router.post("/compare")
-async def compare_strategies(
-    strategies: List[str] = Field(..., description="Список стратегий для сравнения"),
-    ticker: str = Field(..., description="Тикер"),
-    start_date: Optional[date] = Field(None, description="Начальная дата"),
-    end_date: Optional[date] = Field(None, description="Конечная дата"),
-    initial_capital: float = Field(100000.0, description="Начальный капитал")
-):
+async def compare_strategies(request: CompareStrategiesRequest):
     """
     Сравнить несколько стратегий
 
@@ -167,12 +170,12 @@ async def compare_strategies(
     и возвращает сравнительную таблицу метрик.
     """
     logger.info(
-        f"Comparing {len(strategies)} strategies on {ticker}"
+        f"Comparing {len(request.strategies)} strategies on {request.ticker}"
     )
 
     results = []
 
-    for strategy_name in strategies:
+    for strategy_name in request.strategies:
         try:
             # Получить стратегию
             strategy_class = strategy_registry.get(strategy_name)
@@ -181,13 +184,13 @@ async def compare_strategies(
             # Запустить бэктестинг
             engine = BacktestEngine(
                 strategy=strategy,
-                initial_capital=initial_capital
+                initial_capital=request.initial_capital
             )
 
             result = engine.run(
-                ticker=ticker,
-                start_date=start_date,
-                end_date=end_date
+                ticker=request.ticker,
+                start_date=request.start_date,
+                end_date=request.end_date
             )
 
             # Рассчитать метрики
