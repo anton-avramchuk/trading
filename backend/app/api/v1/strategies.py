@@ -81,7 +81,7 @@ def get_strategy_info(name: str):
 
 
 @router.get("/{name}/details", response_model=StrategyDetailsResponse)
-def get_strategy_details(name: str, **parameters: Any):
+def get_strategy_details(name: str):
     """
     Получить детальную информацию о стратегии
 
@@ -89,7 +89,6 @@ def get_strategy_details(name: str, **parameters: Any):
 
     Args:
         name: Название стратегии
-        **parameters: Параметры для создания экземпляра стратегии
 
     Returns:
         StrategyDetailsResponse: Детальная информация
@@ -100,7 +99,7 @@ def get_strategy_details(name: str, **parameters: Any):
     """
     try:
         # Создание экземпляра стратегии для получения конфигурации
-        strategy = StrategyRegistry.create_strategy(name, **parameters)
+        strategy = StrategyRegistry.create_strategy(name)
 
         # Конвертация IndicatorConfig в dict
         indicators_config = [

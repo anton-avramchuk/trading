@@ -1,7 +1,7 @@
 """
 API endpoints для OHLCV данных
 """
-from datetime import datetime
+from datetime import date, datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -30,7 +30,10 @@ SUPPORTED_TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"]
 @router.get("/{ticker}", response_model=List[OHLCVRead])
 def get_ohlcv_data(
     ticker: str,
-    query: OHLCVQuery = Depends(),
+    timeframe: str = "1d",
+    start_date: date | None = None,
+    end_date: date | None = None,
+    limit: int | None = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -38,7 +41,10 @@ def get_ohlcv_data(
 
     Args:
         ticker: Тикер инструмента
-        query: Параметры запроса (timeframe, start_date, end_date, limit)
+        timeframe: Таймфрейм
+        start_date: Начальная дата (опционально, формат: YYYY-MM-DD)
+        end_date: Конечная дата (опционально, формат: YYYY-MM-DD)
+        limit: Лимит записей (опционально)
 
     Returns:
         List[OHLCVRead]: Список OHLCV свечей
@@ -59,30 +65,34 @@ def get_ohlcv_data(
         )
 
     # Валидация таймфрейма
-    if query.timeframe not in SUPPORTED_TIMEFRAMES:
+    if timeframe not in SUPPORTED_TIMEFRAMES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported timeframe: {query.timeframe}. "
+            detail=f"Unsupported timeframe: {timeframe}. "
                    f"Supported: {', '.join(SUPPORTED_TIMEFRAMES)}"
         )
+
+    # Конвертация date в datetime для запроса к БД
+    start_datetime = datetime.combine(start_date, datetime.min.time()) if start_date else None
+    end_datetime = datetime.combine(end_date, datetime.max.time()) if end_date else None
 
     # Получение данных через DataManager
     try:
         data_manager = DataManager(db)
         df = data_manager.get_data(
             ticker=ticker.upper(),
-            timeframe=query.timeframe,
-            start=query.start_date,
-            end=query.end_date
+            timeframe=timeframe,
+            start=start_datetime,
+            end=end_datetime
         )
 
         if df.empty:
-            logger.warning(f"No data found for {ticker} {query.timeframe}")
+            logger.warning(f"No data found for {ticker} {timeframe}")
             return []
 
         # Применение лимита (если указан)
-        if query.limit:
-            df = df.tail(query.limit)
+        if limit:
+            df = df.tail(limit)
 
         # Конвертация в список Pydantic моделей
         ohlcv_list = []
@@ -99,7 +109,7 @@ def get_ohlcv_data(
             )
 
         logger.info(
-            f"Retrieved {len(ohlcv_list)} OHLCV records for {ticker} {query.timeframe}"
+            f"Retrieved {len(ohlcv_list)} OHLCV records for {ticker} {timeframe}"
         )
         return ohlcv_list
 

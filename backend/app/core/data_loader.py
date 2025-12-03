@@ -84,8 +84,8 @@ class DataLoader:
         db: Session,
         ticker: str,
         timeframe: str,
-        start: datetime,
-        end: datetime
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None
     ) -> pd.DataFrame:
         """
         Загрузка данных из базы данных
@@ -94,8 +94,8 @@ class DataLoader:
             db: Сессия базы данных
             ticker: Тикер инструмента
             timeframe: Таймфрейм
-            start: Начальная дата
-            end: Конечная дата
+            start: Начальная дата (опционально)
+            end: Конечная дата (опционально)
 
         Returns:
             DataFrame с OHLCV данными
@@ -105,8 +105,9 @@ class DataLoader:
         """
         logger.info(f"Loading data from DB: {ticker}, {timeframe}, {start} - {end}")
 
-        # Валидация диапазона дат
-        DataValidator.validate_date_range(start, end)
+        # Валидация диапазона дат (только если обе даты заданы)
+        if start is not None and end is not None:
+            DataValidator.validate_date_range(start, end)
 
         # Получение инструмента
         instrument = db.query(Instrument).filter(
@@ -119,10 +120,16 @@ class DataLoader:
         # Запрос OHLCV данных
         query = db.query(OHLCV).filter(
             OHLCV.instrument_id == instrument.id,
-            OHLCV.timeframe == timeframe,
-            OHLCV.timestamp >= start,
-            OHLCV.timestamp <= end
-        ).order_by(OHLCV.timestamp)
+            OHLCV.timeframe == timeframe
+        )
+
+        # Добавляем фильтры по датам только если они заданы
+        if start is not None:
+            query = query.filter(OHLCV.timestamp >= start)
+        if end is not None:
+            query = query.filter(OHLCV.timestamp <= end)
+
+        query = query.order_by(OHLCV.timestamp)
 
         results = query.all()
 

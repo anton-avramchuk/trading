@@ -11,7 +11,22 @@
       "Bash(py -m pytest tests/ -v)",
       "Bash(ng version:*)",
       "Bash(ng new:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(start \"\" \"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\")",
+      "Bash(timeout /t 30 /nobreak)",
+      "Bash(ping:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(start chrome http://localhost)",
+      "Bash(docker-compose logs:*)",
+      "Bash(findstr:*)",
+      "Bash(echo:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(timeout 3 curl:*)"
     ],
     "deny": [],
     "ask": []
