@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { SignalsService } from '../../core/services/signals.service';
 import { StrategiesService } from '../../core/services/strategies.service';
@@ -211,6 +212,7 @@ export class SignalsComponent implements OnInit {
   private signalsService = inject(SignalsService);
   private strategiesService = inject(StrategiesService);
   private instrumentsService = inject(InstrumentsService);
+  private route = inject(ActivatedRoute);
 
   // State
   loading = signal(true);
@@ -241,6 +243,14 @@ export class SignalsComponent implements OnInit {
     this.loadSignals();
     this.loadStrategies();
     this.loadInstruments();
+
+    // Проверяем query параметры
+    this.route.queryParams.subscribe(params => {
+      if (params['strategy']) {
+        this.formData.strategy_name = params['strategy'];
+        this.showForm.set(true);
+      }
+    });
   }
 
   /**

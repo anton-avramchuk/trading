@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 import { StrategiesService } from '../../core/services/strategies.service';
 import { StrategyInfo, StrategyDetails } from '../../core/models/strategy.model';
@@ -73,7 +74,9 @@ import { ErrorMessageComponent } from '../../shared/components/error-message/err
                       (click)="showDetails(strategy)">
                       Подробнее
                     </button>
-                    <button class="btn btn-primary btn-sm">
+                    <button
+                      class="btn btn-primary btn-sm"
+                      (click)="generateSignals(strategy)">
                       Сгенерировать сигналы
                     </button>
                   </div>
@@ -150,6 +153,7 @@ import { ErrorMessageComponent } from '../../shared/components/error-message/err
 })
 export class StrategiesComponent implements OnInit {
   private strategiesService = inject(StrategiesService);
+  private router = inject(Router);
 
   // State
   loading = signal(true);
@@ -209,5 +213,15 @@ export class StrategiesComponent implements OnInit {
   closeDetails(): void {
     this.selectedStrategy.set(null);
     this.strategyDetails.set(null);
+  }
+
+  /**
+   * Перейти к генерации сигналов
+   */
+  generateSignals(strategy: StrategyInfo): void {
+    // Переход на страницу signals с предзаполненной стратегией
+    this.router.navigate(['/signals'], {
+      queryParams: { strategy: strategy.name }
+    });
   }
 }

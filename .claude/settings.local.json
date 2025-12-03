@@ -26,7 +26,11 @@
       "Bash(findstr:*)",
       "Bash(echo:*)",
       "Bash(docker-compose down:*)",
-      "Bash(timeout 3 curl:*)"
+      "Bash(timeout 3 curl:*)",
+      "Bash(start chrome http://localhost/strategies)",
+      "Bash(npm test:*)",
+      "Bash(start chrome:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
