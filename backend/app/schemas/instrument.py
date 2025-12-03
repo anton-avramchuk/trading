@@ -4,7 +4,7 @@ Pydantic схемы для инструментов
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class InstrumentBase(BaseModel):
@@ -54,8 +54,7 @@ class InstrumentRead(InstrumentBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InstrumentWithIndex(InstrumentRead):
@@ -100,8 +99,7 @@ class IndexRead(IndexBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class IndexWithInstruments(IndexRead):

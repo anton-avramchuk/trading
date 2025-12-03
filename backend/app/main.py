@@ -1,18 +1,36 @@
 """
 Основное FastAPI приложение
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.config import settings
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager для startup/shutdown событий"""
+    # Startup
+    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"Debug mode: {settings.DEBUG_MODE}")
+    logger.info(f"API prefix: {settings.API_V1_PREFIX}")
+
+    yield
+
+    # Shutdown
+    logger.info(f"Shutting down {settings.PROJECT_NAME}")
+
+
 # Создание FastAPI приложения
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.DESCRIPTION,
     version=settings.VERSION,
-    debug=settings.DEBUG_MODE
+    debug=settings.DEBUG_MODE,
+    lifespan=lifespan
 )
 
 # Настройка CORS
@@ -23,20 +41,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Действия при запуске приложения"""
-    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
-    logger.info(f"Debug mode: {settings.DEBUG_MODE}")
-    logger.info(f"API prefix: {settings.API_V1_PREFIX}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Действия при остановке приложения"""
-    logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
 
 @app.get("/")

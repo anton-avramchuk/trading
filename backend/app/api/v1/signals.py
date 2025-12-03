@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -38,8 +38,7 @@ class SignalResponse(BaseModel):
     take_profit: Optional[float] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SignalGenerateRequest(BaseModel):
@@ -285,6 +284,7 @@ async def generate_signals(
 async def get_signal_stats(
     ticker: Optional[str] = Query(None, description="Фильтр по тикеру"),
     strategy: Optional[str] = Query(None, description="Фильтр по стратегии"),
+    signal_type: Optional[str] = Query(None, description="Фильтр по типу (BUY/SELL)"),
     start_date: Optional[date] = Query(None, description="Начальная дата"),
     end_date: Optional[date] = Query(None, description="Конечная дата"),
     db: Session = Depends(get_db)
@@ -307,6 +307,9 @@ async def get_signal_stats(
 
     if strategy:
         query = query.filter(SignalModel.strategy_name == strategy)
+
+    if signal_type:
+        query = query.filter(SignalModel.signal_type == signal_type)
 
     if start_date:
         query = query.filter(SignalModel.timestamp >= start_date)

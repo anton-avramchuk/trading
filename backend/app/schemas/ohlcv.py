@@ -4,7 +4,7 @@ Pydantic схемы для OHLCV данных
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class OHLCVBase(BaseModel):
@@ -55,23 +55,18 @@ class OHLCVCreate(OHLCVBase):
 
 
 class OHLCVRead(OHLCVBase):
-    """Схема для чтения OHLCV"""
+    """Схема для чтения OHLCV (только данные свечи)"""
 
-    id: int
-    instrument_id: int
-    timeframe: str
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OHLCVQuery(BaseModel):
     """Схема для запроса OHLCV данных"""
 
-    ticker: str = Field(..., description="Тикер инструмента")
     timeframe: str = Field("1d", description="Таймфрейм")
-    start: datetime = Field(..., description="Начальная дата")
-    end: datetime = Field(..., description="Конечная дата")
+    start_date: datetime | None = Field(None, description="Начальная дата")
+    end_date: datetime | None = Field(None, description="Конечная дата")
+    limit: int | None = Field(None, ge=1, le=10000, description="Лимит записей")
 
     @field_validator("timeframe")
     @classmethod
@@ -97,6 +92,12 @@ class OHLCVImportRequest(BaseModel):
     ticker: str = Field(..., description="Тикер инструмента")
     csv_path: str = Field(..., description="Путь к CSV файлу")
     timeframe: str = Field(..., description="Таймфрейм данных")
+    date_column: str = Field("date", description="Название колонки с датой")
+    datetime_format: str | None = Field(None, description="Формат даты/времени")
+    create_instrument: bool = Field(True, description="Создать инструмент если не существует")
+    instrument_name: str | None = Field(None, description="Название инструмента")
+    market: str = Field("MOEX", description="Рынок")
+    instrument_type: str = Field("stock", description="Тип инструмента")
 
     @field_validator("timeframe")
     @classmethod
@@ -111,4 +112,5 @@ class OHLCVImportRequest(BaseModel):
 class TimeframeList(BaseModel):
     """Список доступных таймфреймов"""
 
-    timeframes: List[str] = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"]
+    timeframes: List[str] = Field(default_factory=lambda: ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"])
+    descriptions: dict[str, str] = Field(default_factory=dict)
