@@ -41,5 +41,8 @@ class Strategy(Base):
     # Статус
     is_active = Column(Integer, default=1)  # 1 = active, 0 = inactive
 
+    # Relationships
+    signals = relationship("Signal", back_populates="strategy")
+
     def __repr__(self) -> str:
         return f"<Strategy(name='{self.name}', active={bool(self.is_active)})>"

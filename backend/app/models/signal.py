@@ -18,9 +18,12 @@ class Signal(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Связь с инструментом
-    instrument_id = Column(Integer, ForeignKey("instruments.id"), nullable=False, index=True)
+    instrument_id = Column(Integer, ForeignKey("instruments.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Стратегия
+    # Связь со стратегией
+    strategy_id = Column(Integer, ForeignKey("strategies.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Для обратной совместимости
     strategy_name = Column(String(255), nullable=False, index=True)
 
     # Тип сигнала
@@ -43,6 +46,7 @@ class Signal(Base):
 
     # Relationships
     instrument = relationship("Instrument", back_populates="signals")
+    strategy = relationship("Strategy", back_populates="signals")
 
     def __repr__(self) -> str:
         return (

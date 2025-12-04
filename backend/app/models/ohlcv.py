@@ -17,10 +17,15 @@ class OHLCV(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Связь с инструментом
-    instrument_id = Column(Integer, ForeignKey("instruments.id"), nullable=False, index=True)
+    instrument_id = Column(Integer, ForeignKey("instruments.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Таймфрейм и время
+    # Связь с таймфреймом
+    timeframe_id = Column(Integer, ForeignKey("timeframes.id"), nullable=False, index=True)
+
+    # Для обратной совместимости и быстрых запросов
     timeframe = Column(String(10), nullable=False, index=True)  # 1h, 1d, 1w, 1M
+
+    # Время
     timestamp = Column(DateTime, nullable=False, index=True)
 
     # OHLCV данные
@@ -32,11 +37,12 @@ class OHLCV(Base):
 
     # Relationships
     instrument = relationship("Instrument", back_populates="ohlcv_data")
+    timeframe_rel = relationship("Timeframe", back_populates="ohlcv_data")
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint('instrument_id', 'timeframe', 'timestamp', name='uq_instrument_timeframe_timestamp'),
-        Index('idx_instrument_timeframe_time', 'instrument_id', 'timeframe', 'timestamp'),
+        UniqueConstraint('instrument_id', 'timeframe_id', 'timestamp', name='uq_instrument_timeframe_timestamp'),
+        Index('idx_instrument_timeframe_time', 'instrument_id', 'timeframe_id', 'timestamp'),
     )
 
     def __repr__(self) -> str:

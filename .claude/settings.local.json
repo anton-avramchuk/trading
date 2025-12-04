@@ -30,7 +30,8 @@
       "Bash(start chrome http://localhost/strategies)",
       "Bash(npm test:*)",
       "Bash(start chrome:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

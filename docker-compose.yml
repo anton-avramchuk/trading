@@ -61,6 +61,40 @@ services:
     networks:
       - trading_network
 
+  imoex:
+    build:
+      context: ./imoex
+      dockerfile: Dockerfile
+    container_name: trading_imoex
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-trading_user}:${POSTGRES_PASSWORD:-trading_password}@postgres:5432/${POSTGRES_DB:-trading_signals}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6379/1
+      MOEX_BASE_URL: https://iss.moex.com/iss
+      MOEX_RATE_LIMIT: 10
+      MOEX_TIMEOUT: 30
+      MOEX_MAX_RETRIES: 3
+      SERVICE_NAME: imoex
+      SERVICE_PORT: 8001
+      SERVICE_HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+      CACHE_TTL: 3600
+      ENABLE_SCHEDULER: false
+      UPDATE_SCHEDULE: "0 19 * * 1-5"
+      UPDATE_TIMEFRAMES: "1d,1h"
+      UPDATE_DAYS_BACK: 3
+    volumes:
+      - ./imoex:/app
+    ports:
+      - "${IMOEX_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    networks:
+      - trading_network
+
   frontend:
     build:
       context: ./frontend
@@ -83,6 +117,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - imoex
     networks:
       - trading_network
     healthcheck:

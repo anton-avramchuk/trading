@@ -22,7 +22,7 @@ class Instrument(Base):
     instrument_type = Column(String(50), nullable=False)  # stock, future, index
 
     # Связь с индексом
-    index_id = Column(Integer, ForeignKey("indexes.id"), nullable=True)
+    index_id = Column(Integer, ForeignKey("indexes.id", ondelete="SET NULL"), nullable=True)
 
     # Метаданные
     created_at = Column(DateTime, default=datetime.utcnow)
