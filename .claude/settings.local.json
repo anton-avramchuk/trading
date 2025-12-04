@@ -31,7 +31,9 @@
       "Bash(npm test:*)",
       "Bash(start chrome:*)",
       "Bash(cat:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(del /f database_schema.md)",
+      "Bash(alembic current:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,535 +1,429 @@
-# 🗄️ Схема базы данных Trading Signals
+# 🗄️ Схема базы данных Trading Signals v3
 
-## Обзор
+## 📊 Обзор
 
-База данных PostgreSQL с поддержкой TimescaleDB для эффективной работы с временными рядами.
+База данных PostgreSQL с TimescaleDB для временных рядов. Версия схемы: **v3** (2025-01-04)
+
+**Основные изменения v3:**
+- ✅ Добавлена нормализация валют (Currency)
+- ✅ Добавлена нормализация стран (Country)
+- ✅ Добавлена таблица бэктестов (Backtest)
+- ✅ Расширены поля Instrument (isin, board, lot_size, tick_size, metadata)
+- ✅ Добавлены FK для Currency в Instrument и Index
+- ✅ Добавлен FK для Country в Index
+
+## 📋 Список таблиц
+
+| № | Таблица | Описание | Записей (примерно) |
+|---|---------|----------|-------------------|
+| 1 | currencies | Валюты (ISO 4217) | 9+ |
+| 2 | countries | Страны (ISO 3166) | 7+ |
+| 3 | timeframes | Таймфреймы | 7 |
+| 4 | indexes | Биржевые индексы | 10-50 |
+| 5 | instruments | Финансовые инструменты | 100-1000 |
+| 6 | ohlcv | OHLCV свечные данные | 1M-100M |
+| 7 | strategies | Торговые стратегии | 10-100 |
+| 8 | signals | Торговые сигналы | 10K-100K |
+| 9 | backtests | Результаты бэктестов | 100-10K |
+| 10 | download_log | Логи загрузок MOEX | 1K-10K |
+
+## 🔗 ER-диаграмма (упрощенная)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    DATABASE: trading (PostgreSQL)                        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## 📊 ER-диаграмма
-
-```
-                    ┌──────────────────────┐
-                    │     timeframes       │
-                    ├──────────────────────┤
-                    │ id (PK)              │
-                    │ code (UQ)            │◄────────┐
-                    │ name                 │         │
-                    │ minutes              │         │
-                    │ moex_interval        │         │
-                    └──────────────────────┘         │
-                                                     │
-                                                     │ (1:N)
-┌──────────────────────────┐                        │
-│       indexes            │                        │
-├──────────────────────────┤                        │
-│ id (PK)         INTEGER  │                        │
-│ name            VARCHAR  │◄──────┐                │
-│ ticker (UQ)     VARCHAR  │       │                │
-│ description     VARCHAR  │       │ (1:N)          │
-│ created_at      DATETIME │       │                │
-│ updated_at      DATETIME │       │                │
-└──────────────────────────┘       │                │
-                                   │                │
-┌──────────────────────────────────┼────────────────┼───────────────────┐
-│       instruments                │                │                   │
-├──────────────────────────────────┤                │                   │
-│ id (PK)            INTEGER       │                │                   │
-│ ticker (UQ, IDX)   VARCHAR(20)   │                │                   │
-│ name               VARCHAR(255)  │                │                   │
-│ market             VARCHAR(50)   │ MOEX, CME     │                   │
-│ instrument_type    VARCHAR(50)   │ stock, future │                   │
-│ index_id (FK, IDX) INTEGER       ├────────────────┘                   │
-│ created_at         DATETIME      │                                    │
-│ updated_at         DATETIME      │                                    │
-└──────────┬───────────────────────┘                                    │
-           │                                                             │
-           │ (1:N)                                                       │
-           │                                                             │
-           ├──────────────────────────────────┬──────────────────────────┘
-           │                                  │
-           │                                  │
-    ┌──────▼──────────────────────┐   ┌──────▼─────────────────────┐
-    │       ohlcv                 │   │    download_log            │
-    ├─────────────────────────────┤   ├────────────────────────────┤
-    │ id (PK)          INTEGER    │   │ id (PK)       INTEGER      │
-    │ instrument_id (FK, IDX)     │   │ instrument_id (FK, IDX)    │
-    │ timeframe_id (FK, IDX) ─────┼───┤ timeframe_id (FK, IDX)     │
-    │ timeframe (IDX)  VARCHAR(10)│   │ ticker (IDX)  VARCHAR(20)  │
-    │ timestamp (IDX)  DATETIME   │   │ timeframe     VARCHAR(10)  │
-    │ open             FLOAT      │   │ market        VARCHAR(50)  │
-    │ high             FLOAT      │   │ board         VARCHAR(50)  │
-    │ low              FLOAT      │   │ status (IDX)  VARCHAR(20)  │
-    │ close            FLOAT      │   │ records_imported INTEGER   │
-    │ volume           BIGINT     │   │ start_date    DATETIME     │
-    │                             │   │ end_date      DATETIME     │
-    │ UNIQUE (instrument_id,      │   │ started_at (IDX) DATETIME  │
-    │         timeframe_id,       │   │ completed_at  DATETIME     │
-    │         timestamp)          │   │ duration_seconds FLOAT     │
-    │ INDEX (instrument_id,       │   │ error         TEXT         │
-    │        timeframe_id,        │   │ metadata      JSON         │
-    │        timestamp)           │   │ created_at    DATETIME     │
-    └─────────────────────────────┘   └────────────────────────────┘
-
-           │ (1:N)
-           │
-    ┌──────▼─────────────────────┐
-    │       signals              │
-    ├────────────────────────────┤
-    │ id (PK)       INTEGER      │
-    │ instrument_id (FK, IDX) ───┘
-    │ strategy_id (FK, IDX)      ──┐
-    │ strategy_name (IDX)        │ │
-    │ signal_type   VARCHAR(10)  │ │
-    │ timestamp (IDX) DATETIME   │ │
-    │ price         FLOAT        │ │
-    │ confidence    FLOAT        │ │
-    │ position_size FLOAT        │ │
-    │ stop_loss     FLOAT        │ │
-    │ take_profit   FLOAT        │ │
-    │ created_at    DATETIME     │ │
-    └────────────────────────────┘ │
-                                   │
-                            ┌──────▼──────────────────────┐
-                            │       strategies            │
-                            ├─────────────────────────────┤
-                            │ id (PK)          INTEGER    │
-                            │ name (UQ, IDX)   VARCHAR(255)│
-                            │ description      TEXT       │
-                            │ config           JSON       │
-                            │ created_at       DATETIME   │
-                            │ updated_at       DATETIME   │
-                            │ is_active        INTEGER    │
-                            └─────────────────────────────┘
+currencies ──┐
+             ├──> instruments ──> ohlcv
+countries ───┤                 └──> signals ──> strategies ──> backtests
+             └──> indexes ────┘               timeframes ────┘
+                                                     └──> download_log
 ```
 
 ## 📋 Детальное описание таблиц
 
-### 1. **timeframes** (Таймфреймы)
+### 1. currencies (Валюты)
+
+Справочник валют по ISO 4217.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| code | VARCHAR(3) UK | Код валюты (RUB, USD, EUR) |
+| numeric_code | VARCHAR(3) | Цифровой код ISO 4217 |
+| name | VARCHAR(100) | Название (Российский рубль) |
+| name_en | VARCHAR(100) | Название EN (Russian Ruble) |
+| symbol | VARCHAR(10) | Символ (₽, $, €) |
+| decimal_places | INTEGER | Десятичных знаков (обычно 2) |
+| is_active | INTEGER | Активна ли (1/0) |
+| created_at | DATETIME | Дата создания |
+
+**Начальные данные:** RUB, USD, EUR, CNY, GBP, JPY, BTC, ETH, USDT
+
+### 2. countries (Страны)
+
+Справочник стран по ISO 3166.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| code | VARCHAR(2) UK | Код страны (RU, US, GB) |
+| code3 | VARCHAR(3) | Код alpha-3 (RUS, USA, GBR) |
+| name | VARCHAR(100) | Название (Россия) |
+| name_en | VARCHAR(100) | Название EN (Russia) |
+| region | VARCHAR(50) | Регион (Europe, Asia, Americas) |
+| is_active | INTEGER | Активна ли (1/0) |
+| created_at | DATETIME | Дата создания |
+
+**Начальные данные:** RU, US, GB, CN, JP, DE, FR
+
+### 3. timeframes (Таймфреймы)
 
 Справочник допустимых таймфреймов.
 
-| Колонка       | Тип          | Описание                          | Constraints        |
-|---------------|--------------|-----------------------------------|--------------------|
-| id            | INTEGER      | Первичный ключ                    | PRIMARY KEY, INDEX |
-| code          | VARCHAR(10)  | Код таймфрейма (1m, 10m, 1h, 1d) | UNIQUE, INDEX      |
-| name          | VARCHAR(50)  | Название (1 минута, 1 день)       | NOT NULL           |
-| description   | TEXT         | Описание                          | NULLABLE           |
-| minutes       | INTEGER      | Количество минут                  | NOT NULL, INDEX    |
-| moex_interval | INTEGER      | Интервал MOEX API                 | NOT NULL           |
-| created_at    | DATETIME     | Дата создания                     |                    |
-| is_active     | INTEGER      | Активность (1/0)                  | DEFAULT 1          |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| code | VARCHAR(10) UK | Код (1m, 10m, 1h, 1d, 1w, 1M, 1Q) |
+| name | VARCHAR(50) | Название (1 минута, 1 день) |
+| description | TEXT | Описание |
+| minutes | INTEGER | Количество минут |
+| moex_interval | INTEGER | Интервал MOEX API |
+| created_at | DATETIME | Дата создания |
+| is_active | INTEGER | Активен ли (1/0) |
 
-**Начальные данные:**
-```sql
-INSERT INTO timeframes VALUES
-(1, '1m',  '1 минута',   'Минутный таймфрейм',       1,     1,   NOW(), 1),
-(2, '10m', '10 минут',   '10-минутный таймфрейм',    10,    10,  NOW(), 1),
-(3, '1h',  '1 час',      'Часовой таймфрейм',        60,    60,  NOW(), 1),
-(4, '1d',  '1 день',     'Дневной таймфрейм',        1440,  24,  NOW(), 1),
-(5, '1w',  '1 неделя',   'Недельный таймфрейм',      10080, 7,   NOW(), 1),
-(6, '1M',  '1 месяц',    'Месячный таймфрейм',       43200, 31,  NOW(), 1),
-(7, '1Q',  '1 квартал',  'Квартальный таймфрейм',    129600,4,   NOW(), 1);
-```
+**Начальные данные:** 7 таймфреймов (1m, 10m, 1h, 1d, 1w, 1M, 1Q)
 
-### 2. **indexes** (Биржевые индексы)
+### 4. indexes (Биржевые индексы)
 
-Хранит индексы (IMOEX, RTS, S&P500 и т.д.).
+Биржевые индексы (IMOEX, RTS, S&P500).
 
-| Колонка     | Тип           | Описание            | Constraints        |
-|-------------|---------------|---------------------|--------------------|
-| id          | INTEGER       | Первичный ключ      | PRIMARY KEY, INDEX |
-| name        | VARCHAR(255)  | Название            | NOT NULL           |
-| ticker      | VARCHAR(20)   | Тикер (IMOEX)       | UNIQUE, INDEX      |
-| description | VARCHAR(1000) | Описание            | NULLABLE           |
-| created_at  | DATETIME      | Дата создания       |                    |
-| updated_at  | DATETIME      | Дата обновления     |                    |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| ticker | VARCHAR(20) UK | Тикер (IMOEX, SPX) |
+| name | VARCHAR(255) | Название |
+| description | VARCHAR(1000) | Описание |
+| currency_id | INTEGER FK | Валюта индекса → currencies.id |
+| country_id | INTEGER FK | Страна индекса → countries.id |
+| created_at | DATETIME | Дата создания |
+| updated_at | DATETIME | Дата обновления |
 
 **Relationships:**
 - → instruments (1:N)
+- → Currency (N:1)
+- → Country (N:1)
 
-### 3. **instruments** (Финансовые инструменты)
+### 5. instruments (Финансовые инструменты)
 
-Центральная таблица для всех тикеров.
+Центральная таблица для всех торгуемых инструментов.
 
-| Колонка         | Тип          | Описание                    | Constraints                   |
-|-----------------|--------------|-----------------------------|------------------------------ |
-| id              | INTEGER      | Первичный ключ              | PRIMARY KEY, INDEX             |
-| ticker          | VARCHAR(20)  | Тикер (GAZP, SBER)          | UNIQUE, INDEX                  |
-| name            | VARCHAR(255) | Полное название             | NOT NULL                       |
-| market          | VARCHAR(50)  | Биржа (MOEX, CME)           | NOT NULL                       |
-| instrument_type | VARCHAR(50)  | Тип (stock, future, index)  | NOT NULL                       |
-| index_id        | INTEGER      | ID индекса                  | FK → indexes.id, SET NULL, INDEX|
-| created_at      | DATETIME     | Дата создания               |                                |
-| updated_at      | DATETIME     | Дата обновления             |                                |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| ticker | VARCHAR(20) UK | Тикер (GAZP, SBER, AAPL) |
+| name | VARCHAR(255) | Полное название |
+| market | VARCHAR(50) | Биржа (MOEX, NYSE) |
+| instrument_type | VARCHAR(50) | Тип (stock, future, index) |
+| index_id | INTEGER FK | ID индекса → indexes.id |
+| currency_id | INTEGER FK | Валюта → currencies.id |
+| isin | VARCHAR(12) | ISIN код (RU0007661625) |
+| board | VARCHAR(50) | Режим торгов (TQBR, RFUD) |
+| lot_size | INTEGER | Размер лота |
+| tick_size | VARCHAR(20) | Шаг цены |
+| metadata | JSON | Дополнительные данные |
+| created_at | DATETIME | Дата создания |
+| updated_at | DATETIME | Дата обновления |
 
 **Relationships:**
-- instruments.index_id → indexes.id (N:1)
+- → Index (N:1)
+- → Currency (N:1)
 - → ohlcv (1:N, CASCADE)
 - → signals (1:N, CASCADE)
 - → download_log (1:N, SET NULL)
 
-### 4. **ohlcv** (Свечные данные)
+### 6. ohlcv (Свечные данные)
 
-Исторические OHLCV данные для всех инструментов.
+Исторические OHLCV данные (TimescaleDB hypertable).
 
-| Колонка        | Тип         | Описание                 | Constraints                       |
-|----------------|-------------|--------------------------|-----------------------------------|
-| id             | INTEGER     | Первичный ключ           | PRIMARY KEY, INDEX                |
-| instrument_id  | INTEGER     | ID инструмента           | FK → instruments.id, CASCADE, INDEX|
-| timeframe_id   | INTEGER     | ID таймфрейма            | FK → timeframes.id, INDEX          |
-| timeframe      | VARCHAR(10) | Код таймфрейма           | NOT NULL, INDEX                    |
-| timestamp      | DATETIME    | Временная метка          | NOT NULL, INDEX                    |
-| open           | FLOAT       | Цена открытия            | NOT NULL                           |
-| high           | FLOAT       | Максимальная цена        | NOT NULL                           |
-| low            | FLOAT       | Минимальная цена         | NOT NULL                           |
-| close          | FLOAT       | Цена закрытия            | NOT NULL                           |
-| volume         | BIGINT      | Объём торгов             | NOT NULL                           |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | BIGINT PK | Первичный ключ |
+| instrument_id | INTEGER FK | → instruments.id (CASCADE) |
+| timeframe_id | INTEGER FK | → timeframes.id |
+| timeframe | VARCHAR(10) | Код таймфрейма (backward compat) |
+| timestamp | DATETIME | Временная метка (UTC) |
+| open | FLOAT | Цена открытия |
+| high | FLOAT | Максимальная цена |
+| low | FLOAT | Минимальная цена |
+| close | FLOAT | Цена закрытия |
+| volume | BIGINT | Объём торгов |
+| created_at | DATETIME | Дата создания |
 
 **Constraints:**
-```sql
-UNIQUE (instrument_id, timeframe_id, timestamp)
-INDEX (instrument_id, timeframe_id, timestamp)  -- Composite index
-```
+- UNIQUE (instrument_id, timeframe_id, timestamp)
+- INDEX (instrument_id, timeframe_id, timestamp)
 
-**Relationships:**
-- ohlcv.instrument_id → instruments.id (N:1, CASCADE)
-- ohlcv.timeframe_id → timeframes.id (N:1)
+**TimescaleDB:**
+- Hypertable partitioned by timestamp
+- Compression policy: 3 months
+- Retention policy: 5 years
 
-**Валидация:**
-- `high >= max(open, close)`
-- `low <= min(open, close)`
-- Все цены > 0
-
-### 5. **signals** (Торговые сигналы)
-
-Сигналы, сгенерированные стратегиями.
-
-| Колонка       | Тип          | Описание                    | Constraints                      |
-|---------------|--------------|-----------------------------| ---------------------------------|
-| id            | INTEGER      | Первичный ключ              | PRIMARY KEY, INDEX                |
-| instrument_id | INTEGER      | ID инструмента              | FK → instruments.id, CASCADE, INDEX|
-| strategy_id   | INTEGER      | ID стратегии                | FK → strategies.id, SET NULL, INDEX|
-| strategy_name | VARCHAR(255) | Название стратегии          | NOT NULL, INDEX                   |
-| signal_type   | VARCHAR(10)  | Тип (BUY/SELL)              | NOT NULL                          |
-| timestamp     | DATETIME     | Время сигнала               | NOT NULL, INDEX                   |
-| price         | FLOAT        | Цена                        | NOT NULL                          |
-| confidence    | FLOAT        | Уверенность (0-1)           | NULLABLE                          |
-| position_size | FLOAT        | Размер позиции              | NULLABLE                          |
-| stop_loss     | FLOAT        | Стоп-лосс                   | NULLABLE                          |
-| take_profit   | FLOAT        | Тейк-профит                 | NULLABLE                          |
-| created_at    | DATETIME     | Дата создания               |                                   |
-
-**Relationships:**
-- signals.instrument_id → instruments.id (N:1, CASCADE)
-- signals.strategy_id → strategies.id (N:1, SET NULL)
-
-### 6. **strategies** (Торговые стратегии)
+### 7. strategies (Торговые стратегии)
 
 Конфигурация торговых стратегий.
 
-| Колонка     | Тип          | Описание                 | Constraints        |
-|-------------|--------------|--------------------------|-------------------|
-| id          | INTEGER      | Первичный ключ           | PRIMARY KEY, INDEX |
-| name        | VARCHAR(255) | Название стратегии       | UNIQUE, INDEX      |
-| description | TEXT         | Описание                 | NULLABLE           |
-| config      | JSON         | Конфигурация в JSON      | NOT NULL           |
-| created_at  | DATETIME     | Дата создания            |                    |
-| updated_at  | DATETIME     | Дата обновления          |                    |
-| is_active   | INTEGER      | Активность (1/0)         | DEFAULT 1          |
-
-**JSON config пример:**
-```json
-{
-  "indicators": [
-    {"name": "MA", "timeframe": "1d", "params": {"period": 50}},
-    {"name": "RSI", "timeframe": "1h", "params": {"period": 14}}
-  ],
-  "rules": {
-    "entry": "close > MA_1d AND RSI_1h < 30",
-    "exit": "RSI_1h > 70"
-  },
-  "risk_management": {
-    "stop_loss_atr_multiplier": 2.0,
-    "take_profit_atr_multiplier": 3.0,
-    "max_position_size": 0.05
-  }
-}
-```
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| name | VARCHAR(255) UK | Название стратегии |
+| description | TEXT | Описание логики |
+| config | JSON | Конфигурация (индикаторы, правила) |
+| is_active | INTEGER | Активна ли (1/0) |
+| created_at | DATETIME | Дата создания |
+| updated_at | DATETIME | Дата обновления |
 
 **Relationships:**
 - → signals (1:N)
+- → backtests (1:N, CASCADE)
 
-### 7. **download_log** (Логи загрузок MOEX)
+### 8. signals (Торговые сигналы)
 
-Отслеживание загрузок данных с MOEX ISS API (для IMOEX микросервиса).
+Сигналы, сгенерированные стратегиями.
 
-| Колонка           | Тип         | Описание                      | Constraints                        |
-|-------------------|-------------|-------------------------------|------------------------------------|
-| id                | INTEGER     | Первичный ключ                | PRIMARY KEY, INDEX                 |
-| instrument_id     | INTEGER     | ID инструмента                | FK → instruments.id, SET NULL, INDEX|
-| timeframe_id      | INTEGER     | ID таймфрейма                 | FK → timeframes.id, INDEX          |
-| ticker            | VARCHAR(20) | Тикер (для ссылки)            | NOT NULL, INDEX                    |
-| timeframe         | VARCHAR(10) | Код таймфрейма                | NOT NULL                           |
-| market            | VARCHAR(50) | Рынок (stock, futures)        | NOT NULL                           |
-| board             | VARCHAR(50) | Режим торгов (TQBR, RFUD)     | NOT NULL                           |
-| status            | VARCHAR(20) | Статус загрузки               | NOT NULL, INDEX                    |
-| records_imported  | INTEGER     | Количество загруженных записей| DEFAULT 0                          |
-| start_date        | DATETIME    | Начало периода                | NULLABLE                           |
-| end_date          | DATETIME    | Конец периода                 | NULLABLE                           |
-| started_at        | DATETIME    | Время начала                  | NOT NULL, INDEX                    |
-| completed_at      | DATETIME    | Время завершения              | NULLABLE                           |
-| duration_seconds  | FLOAT       | Длительность в секундах       | NULLABLE                           |
-| error             | TEXT        | Текст ошибки                  | NULLABLE                           |
-| metadata          | JSON        | Дополнительная информация     | NULLABLE                           |
-| created_at        | DATETIME    | Дата создания записи          |                                    |
-
-**Возможные значения status:**
-- `pending` - в очереди
-- `running` - выполняется
-- `completed` - завершено успешно
-- `failed` - ошибка
-
-**JSON metadata пример:**
-```json
-{
-  "pages_fetched": 5,
-  "duplicates_skipped": 10,
-  "moex_response_time_ms": 1200,
-  "validation_errors": [],
-  "api_calls": 5,
-  "batch_size": 500
-}
-```
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| instrument_id | INTEGER FK | → instruments.id (CASCADE) |
+| strategy_id | INTEGER FK | → strategies.id (SET NULL) |
+| strategy_name | VARCHAR(255) | Название стратегии (backward compat) |
+| signal_type | VARCHAR(10) | Тип (BUY, SELL, HOLD) |
+| timestamp | DATETIME | Время сигнала (UTC) |
+| price | FLOAT | Цена в момент сигнала |
+| confidence | FLOAT | Уверенность (0.0-1.0) |
+| position_size | FLOAT | Размер позиции |
+| stop_loss | FLOAT | Стоп-лосс |
+| take_profit | FLOAT | Тейк-профит |
+| created_at | DATETIME | Дата создания |
 
 **Relationships:**
-- download_log.instrument_id → instruments.id (N:1, SET NULL)
-- download_log.timeframe_id → timeframes.id (N:1)
+- → Instrument (N:1, CASCADE)
+- → Strategy (N:1, SET NULL)
 
-## 🔗 Связи (Foreign Keys)
+### 9. backtests (Результаты бэктестов)
 
-| From Table     | Column        | To Table    | Column | On Delete  |
-|----------------|---------------|-------------|--------|------------|
-| instruments    | index_id      | indexes     | id     | SET NULL   |
-| ohlcv          | instrument_id | instruments | id     | CASCADE    |
-| ohlcv          | timeframe_id  | timeframes  | id     | RESTRICT   |
-| signals        | instrument_id | instruments | id     | CASCADE    |
-| signals        | strategy_id   | strategies  | id     | SET NULL   |
-| download_log   | instrument_id | instruments | id     | SET NULL   |
-| download_log   | timeframe_id  | timeframes  | id     | RESTRICT   |
+Результаты бэктестинга стратегий.
 
-**Правила удаления:**
-- `CASCADE` - каскадное удаление (при удалении инструмента удаляются его ohlcv и signals)
-- `SET NULL` - установка NULL (при удалении индекса/стратегии FK становится NULL)
-- `RESTRICT` - запрет удаления (нельзя удалить timeframe если есть связанные записи)
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| strategy_id | INTEGER FK | → strategies.id (CASCADE) |
+| instruments | JSON | Список тикеров ["GAZP", "SBER"] |
+| timeframe_id | INTEGER FK | → timeframes.id |
+| start_date | DATETIME | Начало периода |
+| end_date | DATETIME | Конец периода |
+| initial_capital | FLOAT | Начальный капитал |
+| final_capital | FLOAT | Финальный капитал |
+| total_return | FLOAT | Общая доходность (%) |
+| annual_return | FLOAT | Годовая доходность (%) |
+| sharpe_ratio | FLOAT | Коэффициент Шарпа |
+| max_drawdown | FLOAT | Максимальная просадка (%) |
+| total_trades | INTEGER | Всего сделок |
+| winning_trades | INTEGER | Прибыльных сделок |
+| losing_trades | INTEGER | Убыточных сделок |
+| win_rate | FLOAT | Процент прибыльных (%) |
+| avg_win | FLOAT | Средняя прибыль |
+| avg_loss | FLOAT | Средний убыток |
+| profit_factor | FLOAT | Profit Factor |
+| metrics | JSON | Детальные метрики |
+| status | VARCHAR(20) | Статус (pending, running, completed, failed) |
+| started_at | DATETIME | Время начала |
+| completed_at | DATETIME | Время завершения |
+| error | TEXT | Текст ошибки |
+| created_at | DATETIME | Дата создания |
 
-## 📈 Индексы для производительности
+**Relationships:**
+- → Strategy (N:1, CASCADE)
+- → Timeframe (N:1)
 
-```sql
--- timeframes
-CREATE INDEX idx_timeframes_code ON timeframes(code);
-CREATE INDEX idx_timeframes_minutes ON timeframes(minutes);
+### 10. download_log (Логи загрузок)
 
--- indexes
-CREATE INDEX idx_indexes_ticker ON indexes(ticker);
+Отслеживание загрузок данных с MOEX ISS API.
 
--- instruments
-CREATE INDEX idx_instruments_ticker ON instruments(ticker);
-CREATE INDEX idx_instruments_index ON instruments(index_id);
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INTEGER PK | Первичный ключ |
+| instrument_id | INTEGER FK | → instruments.id (SET NULL) |
+| timeframe_id | INTEGER FK | → timeframes.id |
+| ticker | VARCHAR(20) | Тикер |
+| timeframe | VARCHAR(10) | Код таймфрейма |
+| market | VARCHAR(50) | Рынок (stock, futures) |
+| board | VARCHAR(50) | Режим торгов (TQBR, RFUD) |
+| status | VARCHAR(20) | Статус (pending, running, completed, failed) |
+| records_imported | INTEGER | Загружено записей |
+| start_date | DATETIME | Начало периода |
+| end_date | DATETIME | Конец периода |
+| started_at | DATETIME | Время начала |
+| completed_at | DATETIME | Время завершения |
+| duration_seconds | FLOAT | Длительность (сек) |
+| error | TEXT | Текст ошибки |
+| metadata | JSON | Дополнительная информация |
+| created_at | DATETIME | Дата создания |
 
--- ohlcv
-CREATE INDEX idx_ohlcv_instrument ON ohlcv(instrument_id);
-CREATE INDEX idx_ohlcv_timeframe_id ON ohlcv(timeframe_id);
-CREATE INDEX idx_ohlcv_timeframe ON ohlcv(timeframe);
-CREATE INDEX idx_ohlcv_timestamp ON ohlcv(timestamp);
-CREATE INDEX idx_ohlcv_composite ON ohlcv(instrument_id, timeframe_id, timestamp);
+**Relationships:**
+- → Instrument (N:1, SET NULL)
+- → Timeframe (N:1)
 
--- signals
-CREATE INDEX idx_signals_instrument ON signals(instrument_id);
-CREATE INDEX idx_signals_strategy_id ON signals(strategy_id);
-CREATE INDEX idx_signals_strategy_name ON signals(strategy_name);
-CREATE INDEX idx_signals_timestamp ON signals(timestamp);
+## 🔗 Foreign Keys Summary
 
--- strategies
-CREATE INDEX idx_strategies_name ON strategies(name);
+| From | Column | To | OnDelete |
+|------|--------|----|---------:|
+| instruments | index_id | indexes.id | SET NULL |
+| instruments | currency_id | currencies.id | SET NULL |
+| indexes | currency_id | currencies.id | SET NULL |
+| indexes | country_id | countries.id | SET NULL |
+| ohlcv | instrument_id | instruments.id | CASCADE |
+| ohlcv | timeframe_id | timeframes.id | RESTRICT |
+| signals | instrument_id | instruments.id | CASCADE |
+| signals | strategy_id | strategies.id | SET NULL |
+| backtests | strategy_id | strategies.id | CASCADE |
+| backtests | timeframe_id | timeframes.id | RESTRICT |
+| download_log | instrument_id | instruments.id | SET NULL |
+| download_log | timeframe_id | timeframes.id | RESTRICT |
 
--- download_log
-CREATE INDEX idx_download_log_instrument ON download_log(instrument_id);
-CREATE INDEX idx_download_log_timeframe_id ON download_log(timeframe_id);
-CREATE INDEX idx_download_log_ticker ON download_log(ticker);
-CREATE INDEX idx_download_log_status ON download_log(status);
-CREATE INDEX idx_download_log_started ON download_log(started_at);
-```
+## 📈 Примеры запросов
 
-## 🎯 TimescaleDB оптимизация
-
-### Конвертация ohlcv в hypertable:
-
-```sql
--- Конвертация таблицы в hypertable TimescaleDB
-SELECT create_hypertable('ohlcv', 'timestamp',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
-
--- Добавление compression policy
-ALTER TABLE ohlcv SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'instrument_id, timeframe_id'
-);
-
--- Автоматическое сжатие данных старше 3 месяцев
-SELECT add_compression_policy('ohlcv', INTERVAL '3 months');
-
--- Retention policy: удаление данных старше 5 лет
-SELECT add_retention_policy('ohlcv', INTERVAL '5 years');
-```
-
-## 💡 Примеры запросов
-
-### Получить свечи для инструмента:
-
-```sql
-SELECT
-    o.timestamp,
-    o.open,
-    o.high,
-    o.low,
-    o.close,
-    o.volume,
-    t.code as timeframe
-FROM ohlcv o
-JOIN instruments i ON o.instrument_id = i.id
-JOIN timeframes t ON o.timeframe_id = t.id
-WHERE i.ticker = 'GAZP'
-  AND t.code = '1d'
-  AND o.timestamp >= '2024-01-01'
-ORDER BY o.timestamp DESC
-LIMIT 100;
-```
-
-### Получить последние сигналы по стратегии:
-
+### Получить инструмент с валютой и страной индекса:
 ```sql
 SELECT
-    s.timestamp,
     i.ticker,
-    s.signal_type,
-    s.price,
-    s.confidence,
-    st.name as strategy_name
-FROM signals s
-JOIN instruments i ON s.instrument_id = i.id
-JOIN strategies st ON s.strategy_id = st.id
-WHERE st.name = 'MACDStrategy'
-  AND s.timestamp >= NOW() - INTERVAL '7 days'
-ORDER BY s.timestamp DESC;
+    i.name,
+    c.code as currency,
+    idx.name as index_name,
+    cnt.name as country
+FROM instruments i
+LEFT JOIN currencies c ON i.currency_id = c.id
+LEFT JOIN indexes idx ON i.index_id = idx.id
+LEFT JOIN countries cnt ON idx.country_id = cnt.id
+WHERE i.ticker = 'GAZP';
 ```
 
-### Статистика загрузок:
-
+### Получить топ стратегий по Sharpe Ratio:
 ```sql
 SELECT
-    ticker,
-    timeframe,
-    status,
-    COUNT(*) as attempts,
-    SUM(records_imported) as total_records,
-    AVG(duration_seconds) as avg_duration,
-    MAX(completed_at) as last_download
-FROM download_log
-WHERE started_at >= NOW() - INTERVAL '30 days'
-GROUP BY ticker, timeframe, status
-ORDER BY total_records DESC;
+    s.name,
+    AVG(b.sharpe_ratio) as avg_sharpe,
+    AVG(b.total_return) as avg_return,
+    COUNT(*) as backtest_count
+FROM strategies s
+JOIN backtests b ON s.id = b.strategy_id
+WHERE b.status = 'completed'
+GROUP BY s.id, s.name
+ORDER BY avg_sharpe DESC
+LIMIT 10;
+```
+
+### Статистика по валютам:
+```sql
+SELECT
+    c.code,
+    c.symbol,
+    COUNT(i.id) as instrument_count
+FROM currencies c
+LEFT JOIN instruments i ON c.id = i.currency_id
+GROUP BY c.id, c.code, c.symbol
+ORDER BY instrument_count DESC;
 ```
 
 ## 🔄 Миграции
 
 ### Применение миграций:
-
 ```bash
-# Применить все миграции
-alembic upgrade head
-
-# Откатить последнюю миграцию
-alembic downgrade -1
-
-# Посмотреть текущую версию
-alembic current
-
-# История миграций
-alembic history
+cd backend
+alembic upgrade head     # Применить все миграции
+alembic current          # Текущая версия
+alembic history          # История
+alembic downgrade -1     # Откатить последнюю
 ```
 
 ### Список миграций:
-
-1. `001_initial_schema.py` - Базовые таблицы (instruments, ohlcv, signals)
+1. `001_initial_schema.py` - Базовые таблицы
 2. `002_add_strategies.py` - Таблица strategies
-3. `003_add_timeframes_and_fks.py` - Таблица timeframes и внешние ключи
-4. `004_add_download_log.py` - Таблица download_log для IMOEX
+3. `003_add_timeframes_and_fks.py` - Таблица timeframes и FK
+4. `004_add_currencies_countries_backtests.py` - **v3: Currency, Country, Backtest**
 
-## 📊 Размеры и метрики
+## 📊 Оценка размеров БД
 
-### Приблизительные оценки:
+| Таблица | Записей | Размер |
+|---------|---------|--------|
+| currencies | 9 | < 1 KB |
+| countries | 7 | < 1 KB |
+| timeframes | 7 | < 1 KB |
+| indexes | 10-50 | < 100 KB |
+| instruments | 100-1000 | 100 KB - 1 MB |
+| ohlcv (1d) | 250K - 2.5M | 50 MB - 500 MB |
+| ohlcv (1h) | 6M - 60M | 1 GB - 10 GB |
+| signals | 10K - 100K | 5 MB - 50 MB |
+| strategies | 10-100 | < 1 MB |
+| backtests | 100-10K | 1 MB - 100 MB |
+| download_log | 1K - 10K | 1 MB - 10 MB |
 
-| Таблица       | Записей (пример) | Размер (ориентировочно) |
-|---------------|------------------|-------------------------|
-| timeframes    | 7                | < 1 KB                  |
-| indexes       | 10-50            | < 100 KB                |
-| instruments   | 100-1000         | 100 KB - 1 MB           |
-| ohlcv (1d)    | 250K - 2.5M      | 50 MB - 500 MB          |
-| ohlcv (1h)    | 6M - 60M         | 1 GB - 10 GB            |
-| signals       | 10K - 100K       | 5 MB - 50 MB            |
-| strategies    | 10-100           | < 1 MB                  |
-| download_log  | 1K - 10K         | 1 MB - 10 MB            |
+**Итого:** 1-20 GB (зависит от истории и количества инструментов)
 
-**Итого:** 1-20 GB для полного набора данных (зависит от количества инструментов и истории).
+## 🎯 Преимущества схемы v3
 
-## 🛠️ Обслуживание
+### 1. Нормализация валют
+- ✅ ISO 4217 стандарт
+- ✅ Символы для UI (₽, $, €)
+- ✅ Decimal places для форматирования
+- ✅ Поддержка криптовалют (BTC, ETH, USDT)
 
-### Регулярные задачи:
+### 2. Нормализация стран
+- ✅ ISO 3166 стандарт
+- ✅ Регионы для группировки
+- ✅ Поддержка 2 и 3-буквенных кодов
 
-1. **Vacuum** - еженедельно
-   ```sql
-   VACUUM ANALYZE ohlcv;
-   ```
+### 3. Backtests таблица
+- ✅ Хранение результатов бэктестов
+- ✅ Метрики: Sharpe, Drawdown, Win Rate, Profit Factor
+- ✅ Сравнение стратегий
+- ✅ Оптимизация параметров
 
-2. **Reindex** - ежемесячно
-   ```sql
-   REINDEX TABLE ohlcv;
-   ```
-
-3. **Статистика** - автоматически
-   ```sql
-   ANALYZE ohlcv;
-   ```
-
-4. **Backup** - ежедневно
-   ```bash
-   pg_dump -U user -d trading > backup_$(date +%Y%m%d).sql
-   ```
+### 4. Расширенные поля Instrument
+- ✅ ISIN для международной идентификации
+- ✅ Board для специфики биржи
+- ✅ Lot size и tick size для расчётов
+- ✅ Metadata JSON для гибкости
 
 ## 🔐 Безопасность
 
-### Рекомендации:
-
-1. Использовать разные пользователи БД для разных сервисов
-2. Ограничить доступ IMOEX микросервиса только к необходимым таблицам
-3. Шифрование соединений (SSL/TLS)
-4. Regular password rotation
-5. Audit logging для критичных операций
+Рекомендации:
+- Разные пользователи для backend и imoex сервисов
+- SSL/TLS для соединений
+- Regular backups
+- Audit logging
 
 ```sql
--- Создание пользователя для IMOEX
+-- Пример создания пользователя для IMOEX
 CREATE USER imoex_service WITH PASSWORD 'secure_password';
-
--- Права доступа
 GRANT SELECT, INSERT, UPDATE ON instruments TO imoex_service;
-GRANT SELECT, INSERT, UPDATE ON ohlcv TO imoex_service;
-GRANT SELECT ON timeframes TO imoex_service;
-GRANT SELECT, INSERT, UPDATE ON download_log TO imoex_service;
+GRANT SELECT, INSERT ON ohlcv TO imoex_service;
+GRANT SELECT ON timeframes, currencies TO imoex_service;
+GRANT ALL ON download_log TO imoex_service;
 ```
+
+## 📝 Changelog
+
+### v3 (2025-01-04)
+- ➕ Добавлена таблица currencies (9 валют)
+- ➕ Добавлена таблица countries (7 стран)
+- ➕ Добавлена таблица backtests (результаты бэктестов)
+- 🔄 Обновлена Instrument: + currency_id, isin, board, lot_size, tick_size, metadata
+- 🔄 Обновлена Index: + currency_id, country_id
+- 🔄 Обновлена Strategy: + relationship backtests
+
+### v2 (2024-12-20)
+- ➕ Добавлена таблица timeframes
+- ➕ Добавлена таблица download_log
+- 🔄 Обновлена OHLCV: + timeframe_id FK
+- 🔄 Обновлена Signal: + strategy_id FK
+
+### v1 (2024-12-01)
+- ➕ Базовые таблицы: instruments, ohlcv, signals, strategies, indexes

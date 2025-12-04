@@ -43,6 +43,7 @@ class Strategy(Base):
 
     # Relationships
     signals = relationship("Signal", back_populates="strategy")
+    backtests = relationship("Backtest", back_populates="strategy", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Strategy(name='{self.name}', active={bool(self.is_active)})>"
