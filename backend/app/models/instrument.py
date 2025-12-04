@@ -32,7 +32,7 @@ class Instrument(Base):
     board = Column(String(50), nullable=True)  # Режим торгов (TQBR, RFUD)
     lot_size = Column(Integer, nullable=True)  # Размер лота
     tick_size = Column(String(20), nullable=True)  # Шаг цены
-    metadata = Column(JSON, nullable=True)  # Дополнительная информация
+    extra_data = Column(JSON, nullable=True)  # Дополнительная информация
 
     # Метаданные
     created_at = Column(DateTime, default=datetime.utcnow)

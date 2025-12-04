@@ -21,7 +21,7 @@ def upgrade():
     op.create_table(
         'currencies',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('code', sa.String(length=3), nullable=False),
+        sa.Column('code', sa.String(length=10), nullable=False),
         sa.Column('numeric_code', sa.String(length=3), nullable=True),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('name_en', sa.String(length=100), nullable=True),
@@ -137,7 +137,7 @@ def upgrade():
     op.add_column('instruments', sa.Column('board', sa.String(length=50), nullable=True))
     op.add_column('instruments', sa.Column('lot_size', sa.Integer(), nullable=True))
     op.add_column('instruments', sa.Column('tick_size', sa.String(length=20), nullable=True))
-    op.add_column('instruments', sa.Column('metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True))
+    op.add_column('instruments', sa.Column('extra_data', postgresql.JSON(astext_type=sa.Text()), nullable=True))
 
     op.create_index('ix_instruments_currency_id', 'instruments', ['currency_id'])
     op.create_foreign_key('fk_instruments_currency', 'instruments', 'currencies', ['currency_id'], ['id'], ondelete='SET NULL')
@@ -164,7 +164,7 @@ def downgrade():
     # Drop foreign key and columns from instruments
     op.drop_constraint('fk_instruments_currency', 'instruments', type_='foreignkey')
     op.drop_index('ix_instruments_currency_id', 'instruments')
-    op.drop_column('instruments', 'metadata')
+    op.drop_column('instruments', 'extra_data')
     op.drop_column('instruments', 'tick_size')
     op.drop_column('instruments', 'lot_size')
     op.drop_column('instruments', 'board')

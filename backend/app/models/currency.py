@@ -16,8 +16,8 @@ class Currency(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Код валюты ISO 4217 (RUB, USD, EUR, etc.)
-    code = Column(String(3), unique=True, nullable=False, index=True)
+    # Код валюты ISO 4217 (RUB, USD, EUR) или тикер криптовалюты (BTC, ETH, USDT)
+    code = Column(String(10), unique=True, nullable=False, index=True)
 
     # Цифровой код ISO 4217 (643 для RUB, 840 для USD)
     numeric_code = Column(String(3), nullable=True)

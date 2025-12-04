@@ -54,8 +54,8 @@ class DownloadLog(Base):
     error = Column(Text, nullable=True)
 
     # Дополнительная информация в JSON
-    metadata = Column(JSON, nullable=True)
-    # Пример metadata:
+    extra_data = Column(JSON, nullable=True)
+    # Пример extra_data:
     # {
     #     "pages_fetched": 5,
     #     "duplicates_skipped": 10,
