@@ -1,6 +1,13 @@
 """
-Pydantic AE5<K
+Pydantic схемы
 """
+from app.schemas.country import CountryBase, CountryCreate, CountryResponse, CountryUpdate
+from app.schemas.currency import (
+    CurrencyBase,
+    CurrencyCreate,
+    CurrencyResponse,
+    CurrencyUpdate,
+)
 from app.schemas.backtest import (
     BacktestConfig,
     BacktestListItem,
@@ -68,6 +75,16 @@ from app.schemas.strategy import (
 )
 
 __all__ = [
+    # Currency schemas
+    "CurrencyBase",
+    "CurrencyCreate",
+    "CurrencyUpdate",
+    "CurrencyResponse",
+    # Country schemas
+    "CountryBase",
+    "CountryCreate",
+    "CountryUpdate",
+    "CountryResponse",
     # Instrument schemas
     "InstrumentBase",
     "InstrumentCreate",

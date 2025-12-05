@@ -33,7 +33,15 @@
       "Bash(cat:*)",
       "Bash(git push:*)",
       "Bash(del /f database_schema.md)",
-      "Bash(alembic current:*)"
+      "Bash(alembic current:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(python -m alembic:*)",
+      "Bash(docker-compose run:*)",
+      "Bash(py -m pytest:*)",
+      "Bash(venvScriptsactivate)",
+      "Bash(pytest:*)",
+      "Bash(./venv/Scripts/activate.bat)",
+      "Bash(venv/Scripts/pytest.exe:*)"
     ],
     "deny": [],
     "ask": []

@@ -33,6 +33,11 @@ def test_engine():
     from app.models.ohlcv import OHLCV
     from app.models.signal import Signal
     from app.models.strategy import Strategy
+    from app.models.currency import Currency
+    from app.models.country import Country
+    from app.models.timeframe import Timeframe
+    from app.models.backtest import Backtest
+    from app.models.download_log import DownloadLog
 
     Base.metadata.create_all(bind=engine)
     yield engine

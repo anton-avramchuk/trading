@@ -15,6 +15,14 @@ class InstrumentBase(BaseModel):
     market: str = Field(..., description="Рынок (MOEX, CME, и т.д.)")
     instrument_type: str = Field(..., description="Тип инструмента (stock, future, index)")
 
+    # Новые поля из схемы v3
+    currency_id: Optional[int] = Field(None, description="ID валюты")
+    isin: Optional[str] = Field(None, min_length=12, max_length=12, description="Международный идентификатор (ISIN)")
+    board: Optional[str] = Field(None, max_length=50, description="Режим торгов (TQBR, RFUD)")
+    lot_size: Optional[int] = Field(None, gt=0, description="Размер лота")
+    tick_size: Optional[str] = Field(None, max_length=20, description="Шаг цены")
+    extra_data: Optional[dict] = Field(None, description="Дополнительная информация (JSON)")
+
     @field_validator("ticker")
     @classmethod
     def ticker_uppercase(cls, v: str) -> str:
@@ -44,6 +52,12 @@ class InstrumentUpdate(BaseModel):
     market: Optional[str] = None
     instrument_type: Optional[str] = None
     index_id: Optional[int] = None
+    currency_id: Optional[int] = None
+    isin: Optional[str] = Field(None, min_length=12, max_length=12)
+    board: Optional[str] = Field(None, max_length=50)
+    lot_size: Optional[int] = Field(None, gt=0)
+    tick_size: Optional[str] = Field(None, max_length=20)
+    extra_data: Optional[dict] = None
 
 
 class InstrumentRead(InstrumentBase):
@@ -62,6 +76,8 @@ class InstrumentWithIndex(InstrumentRead):
 
     index_name: Optional[str] = None
     index_ticker: Optional[str] = None
+    currency_code: Optional[str] = None
+    currency_symbol: Optional[str] = None
 
 
 # Index schemas
@@ -71,6 +87,10 @@ class IndexBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Название индекса")
     ticker: str = Field(..., min_length=1, max_length=20, description="Тикер индекса")
     description: Optional[str] = Field(None, max_length=1000)
+
+    # Новые поля из схемы v3
+    currency_id: Optional[int] = Field(None, description="ID валюты")
+    country_id: Optional[int] = Field(None, description="ID страны")
 
     @field_validator("ticker")
     @classmethod
@@ -90,6 +110,8 @@ class IndexUpdate(BaseModel):
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
+    currency_id: Optional[int] = None
+    country_id: Optional[int] = None
 
 
 class IndexRead(IndexBase):
@@ -106,3 +128,7 @@ class IndexWithInstruments(IndexRead):
     """Схема индекса со списком инструментов"""
 
     instruments_count: int = 0
+    currency_code: Optional[str] = None
+    currency_symbol: Optional[str] = None
+    country_code: Optional[str] = None
+    country_name: Optional[str] = None
