@@ -37,6 +37,25 @@ import { RouterModule } from '@angular/router';
               <span>Инструменты</span>
             </a>
 
+            <a routerLink="/currencies" routerLinkActive="active" class="nav-link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="9" y1="11" x2="15" y2="11"></line>
+                <line x1="9" y1="14" x2="15" y2="14"></line>
+              </svg>
+              <span>Валюты</span>
+            </a>
+
+            <a routerLink="/countries" routerLinkActive="active" class="nav-link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+              </svg>
+              <span>Страны</span>
+            </a>
+
             <a routerLink="/indicators" routerLinkActive="active" class="nav-link">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>

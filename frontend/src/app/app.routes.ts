@@ -40,6 +40,16 @@ export const routes: Routes = [
         path: 'backtesting',
         loadComponent: () => import('./features/backtesting/backtesting.component')
           .then(m => m.BacktestingComponent)
+      },
+      {
+        path: 'currencies',
+        loadComponent: () => import('./features/currencies/currencies.component')
+          .then(m => m.CurrenciesComponent)
+      },
+      {
+        path: 'countries',
+        loadComponent: () => import('./features/countries/countries.component')
+          .then(m => m.CountriesComponent)
       }
     ]
   },
