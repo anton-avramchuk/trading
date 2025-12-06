@@ -11,27 +11,27 @@ class TestCurrenciesAPI:
     """Тесты для /api/v1/currencies"""
 
     def test_get_currencies_empty(self, client):
-        """Тест получения пустого списка валют"""
+        """Тест получения списка валют (может быть seed data)"""
         response = client.get("/api/v1/currencies/")
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        assert isinstance(response.json(), list)
 
     def test_create_currency(self, client):
         """Тест создания валюты"""
         currency_data = {
-            "code": "RUB",
-            "numeric_code": "643",
-            "name": "Российский рубль",
-            "name_en": "Russian Ruble",
-            "symbol": "₽",
+            "code": "TST",
+            "numeric_code": "999",
+            "name": "Тестовая валюта",
+            "name_en": "Test Currency",
+            "symbol": "T",
             "decimal_places": 2,
             "is_active": 1
         }
         response = client.post("/api/v1/currencies/", json=currency_data)
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["code"] == "RUB"
-        assert data["symbol"] == "₽"
+        assert data["code"] == "TST"
+        assert data["symbol"] == "T"
         assert data["decimal_places"] == 2
         assert "id" in data
         assert "created_at" in data
@@ -40,8 +40,8 @@ class TestCurrenciesAPI:
         """Тест создания дублирующейся валюты"""
         # Создаем первую валюту
         currency = Currency(
-            code="USD",
-            name="Доллар США",
+            code="TC1",
+            name="Test Currency 1",
             decimal_places=2
         )
         test_db.add(currency)
@@ -49,8 +49,8 @@ class TestCurrenciesAPI:
 
         # Пытаемся создать дубликат
         currency_data = {
-            "code": "USD",
-            "name": "US Dollar",
+            "code": "TC1",
+            "name": "Duplicate Currency",
             "decimal_places": 2
         }
         response = client.post("/api/v1/currencies/", json=currency_data)
@@ -61,9 +61,9 @@ class TestCurrenciesAPI:
         """Тест получения списка валют"""
         # Создаем валюты
         currencies = [
-            Currency(code="RUB", name="Российский рубль", symbol="₽", decimal_places=2),
-            Currency(code="USD", name="Доллар США", symbol="$", decimal_places=2),
-            Currency(code="EUR", name="Евро", symbol="€", decimal_places=2),
+            Currency(code="TC2", name="Test Currency 2", symbol="T2", decimal_places=2),
+            Currency(code="TC3", name="Test Currency 3", symbol="T3", decimal_places=2),
+            Currency(code="TC4", name="Test Currency 4", symbol="T4", decimal_places=2),
         ]
         for currency in currencies:
             test_db.add(currency)
@@ -72,8 +72,9 @@ class TestCurrenciesAPI:
         response = client.get("/api/v1/currencies/")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert len(data) == 3
-        assert {c["code"] for c in data} == {"RUB", "USD", "EUR"}
+        # Проверяем что наши тестовые валюты есть в списке
+        codes = {c["code"] for c in data}
+        assert "TC2" in codes and "TC3" in codes and "TC4" in codes
 
     def test_get_currencies_with_pagination(self, client, test_db):
         """Тест пагинации списка валют"""
@@ -94,9 +95,9 @@ class TestCurrenciesAPI:
     def test_get_currencies_active_only(self, client, test_db):
         """Тест фильтрации активных валют"""
         currencies = [
-            Currency(code="RUB", name="Российский рубль", is_active=1, decimal_places=2),
-            Currency(code="USD", name="Доллар США", is_active=1, decimal_places=2),
-            Currency(code="OLD", name="Old Currency", is_active=0, decimal_places=2),
+            Currency(code="TC5", name="Test Currency 5", is_active=1, decimal_places=2),
+            Currency(code="TC6", name="Test Currency 6", is_active=1, decimal_places=2),
+            Currency(code="TC7", name="Test Currency 7", is_active=0, decimal_places=2),
         ]
         for currency in currencies:
             test_db.add(currency)
@@ -105,15 +106,18 @@ class TestCurrenciesAPI:
         response = client.get("/api/v1/currencies/?active_only=true")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert len(data) == 2
+        # Все возвращенные валюты должны быть активны
         assert all(c["is_active"] == 1 for c in data)
+        codes = {c["code"] for c in data}
+        assert "TC5" in codes and "TC6" in codes
+        assert "TC7" not in codes
 
     def test_get_currency_by_id(self, client, test_db):
         """Тест получения валюты по ID"""
         currency = Currency(
-            code="RUB",
-            name="Российский рубль",
-            symbol="₽",
+            code="TC8",
+            name="Test Currency 8",
+            symbol="T8",
             decimal_places=2
         )
         test_db.add(currency)
@@ -123,53 +127,53 @@ class TestCurrenciesAPI:
         response = client.get(f"/api/v1/currencies/{currency.id}")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["code"] == "RUB"
-        assert data["symbol"] == "₽"
+        assert data["code"] == "TC8"
+        assert data["symbol"] == "T8"
 
     def test_get_currency_by_id_not_found(self, client):
         """Тест получения несуществующей валюты"""
-        response = client.get("/api/v1/currencies/999")
+        response = client.get("/api/v1/currencies/999999")
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["detail"].lower()
 
     def test_get_currency_by_code(self, client, test_db):
         """Тест получения валюты по коду"""
         currency = Currency(
-            code="USD",
-            name="Доллар США",
-            symbol="$",
+            code="TC9",
+            name="Test Currency 9",
+            symbol="T9",
             decimal_places=2
         )
         test_db.add(currency)
         test_db.commit()
 
-        response = client.get("/api/v1/currencies/code/USD")
+        response = client.get("/api/v1/currencies/code/TC9")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["code"] == "USD"
-        assert data["symbol"] == "$"
+        assert data["code"] == "TC9"
+        assert data["symbol"] == "T9"
 
     def test_get_currency_by_code_case_insensitive(self, client, test_db):
         """Тест поиска валюты без учёта регистра"""
-        currency = Currency(code="RUB", name="Рубль", decimal_places=2)
+        currency = Currency(code="TCA", name="Test Currency A", decimal_places=2)
         test_db.add(currency)
         test_db.commit()
 
-        response = client.get("/api/v1/currencies/code/rub")
+        response = client.get("/api/v1/currencies/code/tca")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["code"] == "RUB"
+        assert data["code"] == "TCA"
 
     def test_get_currency_by_code_not_found(self, client):
         """Тест получения несуществующей валюты по коду"""
-        response = client.get("/api/v1/currencies/code/XXX")
+        response = client.get("/api/v1/currencies/code/ZZZ")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_currency(self, client, test_db):
         """Тест обновления валюты"""
         currency = Currency(
-            code="RUB",
-            name="Рубль",
+            code="TCB",
+            name="Test Currency B",
             symbol="р",
             decimal_places=2
         )
@@ -178,25 +182,25 @@ class TestCurrenciesAPI:
         test_db.refresh(currency)
 
         update_data = {
-            "symbol": "₽",
-            "name": "Российский рубль"
+            "symbol": "TB",
+            "name": "Test Currency B Updated"
         }
         response = client.patch(f"/api/v1/currencies/{currency.id}", json=update_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["symbol"] == "₽"
-        assert data["name"] == "Российский рубль"
-        assert data["code"] == "RUB"  # Код не изменился
+        assert data["symbol"] == "TB"
+        assert data["name"] == "Test Currency B Updated"
+        assert data["code"] == "TCB"  # Код не изменился
 
     def test_update_currency_not_found(self, client):
         """Тест обновления несуществующей валюты"""
         update_data = {"symbol": "$"}
-        response = client.patch("/api/v1/currencies/999", json=update_data)
+        response = client.patch("/api/v1/currencies/999999", json=update_data)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_delete_currency(self, client, test_db):
         """Тест удаления валюты"""
-        currency = Currency(code="OLD", name="Old Currency", decimal_places=2)
+        currency = Currency(code="TCC", name="Test Currency C", decimal_places=2)
         test_db.add(currency)
         test_db.commit()
         test_db.refresh(currency)
@@ -210,20 +214,20 @@ class TestCurrenciesAPI:
 
     def test_delete_currency_not_found(self, client):
         """Тест удаления несуществующей валюты"""
-        response = client.delete("/api/v1/currencies/999")
+        response = client.delete("/api/v1/currencies/999999")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_create_crypto_currency(self, client):
         """Тест создания криптовалюты с длинным кодом"""
         currency_data = {
-            "code": "USDT",
-            "name": "Tether",
-            "symbol": "₮",
+            "code": "TCRYPTO",
+            "name": "Test Crypto Currency",
+            "symbol": "TC",
             "decimal_places": 8,
             "is_active": 1
         }
         response = client.post("/api/v1/currencies/", json=currency_data)
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["code"] == "USDT"
+        assert data["code"] == "TCRYPTO"
         assert data["decimal_places"] == 8

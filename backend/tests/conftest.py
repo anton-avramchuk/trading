@@ -161,7 +161,27 @@ def sample_instruments(test_db, sample_index):
 
 
 @pytest.fixture(scope="function")
-def sample_ohlcv(test_db, sample_instrument):
+def sample_timeframe(test_db):
+    """
+    Создание тестового таймфрейма
+    """
+    from app.models.timeframe import Timeframe
+
+    timeframe = Timeframe(
+        code="1d",
+        name="1 day",
+        minutes=1440,
+        moex_interval=24,
+        description="Daily timeframe"
+    )
+    test_db.add(timeframe)
+    test_db.commit()
+    test_db.refresh(timeframe)
+    return timeframe
+
+
+@pytest.fixture(scope="function")
+def sample_ohlcv(test_db, sample_instrument, sample_timeframe):
     """
     Создание тестовых OHLCV данных
     """
@@ -174,6 +194,7 @@ def sample_ohlcv(test_db, sample_instrument):
     for i in range(10):
         ohlcv = OHLCV(
             instrument_id=sample_instrument.id,
+            timeframe_id=sample_timeframe.id,
             timeframe="1d",
             timestamp=base_date + timedelta(days=i),
             open=100.0 + i,
