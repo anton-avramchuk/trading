@@ -1,48 +1,80 @@
 """
 Общие фикстуры для тестов
 """
+import os
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+# Установить тестовый режим ДО импорта app
+os.environ["TESTING"] = "1"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
+# Очистить lru_cache для settings
+from app.config import get_settings
+get_settings.cache_clear()
+
+# Импортируем все модели ДО импорта app для правильной регистрации
+from app.models.index import Index
+from app.models.instrument import Instrument
+from app.models.ohlcv import OHLCV
+from app.models.signal import Signal
+from app.models.strategy import Strategy
+from app.models.currency import Currency
+from app.models.country import Country
+from app.models.timeframe import Timeframe
+from app.models.backtest import Backtest
+from app.models.download_log import DownloadLog
+
 from app.main import app
+import app.models.database as db_module
 from app.models.database import Base
 from app.api.deps import get_db
 
 # Тестовая база данных (SQLite in-memory)
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 
+# Создаем тестовый engine и переопределяем глобальный engine
+test_engine_global = create_engine(
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+    echo=False
+)
 
-@pytest.fixture(scope="function")
+# Переопределяем engine и SessionLocal в модуле database
+db_module.engine = test_engine_global
+db_module.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine_global)
+
+# Создаем все таблицы
+Base.metadata.create_all(bind=test_engine_global)
+
+
+@pytest.fixture(scope="session")
 def test_engine():
     """
-    Создание тестового engine для каждого теста
+    Возвращает глобальный тестовый engine
     """
-    engine = create_engine(
-        SQLALCHEMY_TEST_DATABASE_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,  # Критично для SQLite in-memory: все соединения используют одну БД
-        echo=False
-    )
+    yield test_engine_global
+    # Очистка выполняется в конце сессии
+    Base.metadata.drop_all(bind=test_engine_global)
+    test_engine_global.dispose()
 
-    # Импортируем все модели для правильной регистрации
-    from app.models.index import Index
-    from app.models.instrument import Instrument
-    from app.models.ohlcv import OHLCV
-    from app.models.signal import Signal
-    from app.models.strategy import Strategy
-    from app.models.currency import Currency
-    from app.models.country import Country
-    from app.models.timeframe import Timeframe
-    from app.models.backtest import Backtest
-    from app.models.download_log import DownloadLog
 
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_db(test_engine):
+    """
+    Автоматическая очистка данных между тестами для изоляции
+    """
+    yield
+    # После каждого теста очищаем все таблицы
+    with test_engine.connect() as connection:
+        # Получаем список всех таблиц
+        for table in reversed(Base.metadata.sorted_tables):
+            connection.execute(table.delete())
+        connection.commit()
 
 
 @pytest.fixture(scope="function")
